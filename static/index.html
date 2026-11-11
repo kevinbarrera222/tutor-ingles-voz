@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutor de inglés por voz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <div class="marca">
+      <span class="logo">🎙️</span>
+      <span>Tutor de inglés <b>por voz</b></span>
+    </div>
+    <span class="etiqueta">Prototipo</span>
+  </header>
+
+  <main>
+    <!-- PANTALLA 1: elegir escenario y nivel -->
+    <section id="pantalla-inicio" class="pantalla activa">
+      <h1>Practica inglés hablando</h1>
+      <p class="sub">Elige una situación y conversa en voz alta con tu tutor. Al terminar, recibes una evaluación con tus errores y cómo mejorar.</p>
+
+      <h2>1. Escenario</h2>
+      <div id="escenarios" class="tarjetas"></div>
+
+      <h2>2. Tu nivel</h2>
+      <div id="niveles" class="niveles"></div>
+
+      <button id="btn-empezar" class="boton principal grande" disabled>
+        <span>🎤</span> Empezar conversación
+      </button>
+      <p class="nota" id="nota-limite"></p>
+      <div id="error-inicio" class="alerta oculto"></div>
+    </section>
+
+    <!-- PANTALLA 2: conversación -->
+    <section id="pantalla-conversacion" class="pantalla">
+      <div class="cabecera-conversacion">
+        <div>
+          <div id="titulo-conversacion" class="titulo-conv"></div>
+          <div id="estado" class="estado"><span class="punto"></span><span id="texto-estado">Conectando…</span></div>
+        </div>
+        <div class="medidores">
+          <div class="medidor"><span class="valor" id="cronometro">0:00</span><span class="rotulo" id="rotulo-tiempo">de 5:00</span></div>
+          <div class="medidor"><span class="valor" id="costo">US$0.000</span><span class="rotulo">costo estimado</span></div>
+        </div>
+      </div>
+
+      <div id="aviso-tiempo" class="alerta aviso oculto"></div>
+      <div id="transcripcion" class="transcripcion" aria-live="polite"></div>
+
+      <div class="controles">
+        <button id="btn-silenciar" class="boton secundario">🔇 Silenciar micrófono</button>
+        <button id="btn-terminar" class="boton principal">✅ Terminar y evaluar</button>
+      </div>
+      <div id="error-conversacion" class="alerta oculto"></div>
+    </section>
+
+    <!-- PANTALLA 3: evaluación -->
+    <section id="pantalla-evaluacion" class="pantalla">
+      <div id="cargando-evaluacion" class="cargando">
+        <div class="spinner"></div>
+        <p>Tu profesor está revisando la conversación…</p>
+      </div>
+      <div id="evaluacion" class="oculto"></div>
+      <div id="error-evaluacion" class="alerta oculto"></div>
+      <button id="btn-otra" class="boton secundario grande oculto">🔁 Practicar otra vez</button>
+    </section>
+  </main>
+
+  <audio id="audio-tutor" autoplay></audio>
+  <script src="/static/app.js"></script>
+</body>
+</html>

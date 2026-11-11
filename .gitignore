@@ -1,0 +1,8 @@
+# Secretos: NUNCA subir la API Key
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
