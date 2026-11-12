@@ -20,7 +20,7 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from escenarios import ESCENARIOS, NIVELES, construir_instrucciones
-from evaluador import Evaluacion, evaluar
+from evaluador import Evaluacion, Pista, dar_pista, evaluar
 
 load_dotenv()
 
@@ -30,6 +30,8 @@ MODELO_EVALUACION = os.getenv("MODELO_EVALUACION", "gpt-6-luna")
 VOZ = os.getenv("VOZ", "marin")
 MAX_MINUTOS_SESION = float(os.getenv("MAX_MINUTOS_SESION", "5"))
 MAX_SESIONES_POR_DIA = int(os.getenv("MAX_SESIONES_POR_DIA", "20"))
+# Qué tan rápido responde el tutor cuando dejas de hablar: high (rápido), medium o low (espera más)
+RAPIDEZ_RESPUESTA = os.getenv("RAPIDEZ_RESPUESTA", "high")
 
 CARPETA_STATIC = Path(__file__).parent / "static"
 
@@ -80,7 +82,7 @@ def inicio():
 def configuracion():
     """Escenarios, niveles y límites para armar la pantalla de inicio."""
     return {
-        "escenarios": {k: {c: v[c] for c in ("titulo", "icono", "descripcion")} for k, v in ESCENARIOS.items()},
+        "escenarios": {k: {c: v[c] for c in ("titulo", "icono", "descripcion", "personaje", "papel", "avatar")} for k, v in ESCENARIOS.items()},
         "niveles": {k: {c: v[c] for c in ("titulo", "descripcion")} for k, v in NIVELES.items()},
         "max_minutos": MAX_MINUTOS_SESION,
         "modelo_voz": MODELO_VOZ,
@@ -107,7 +109,7 @@ def crear_sesion(pedido: PedidoSesion, request: Request):
         "audio": {
             "input": {
                 "transcription": {"model": MODELO_TRANSCRIPCION, "language": "en"},
-                "turn_detection": {"type": "semantic_vad", "eagerness": "low"},
+                "turn_detection": {"type": "semantic_vad", "eagerness": RAPIDEZ_RESPUESTA},
                 "noise_reduction": {"type": "near_field"},
             },
             "output": {"voice": VOZ, "speed": NIVELES[pedido.nivel]["velocidad"]},
@@ -151,3 +153,24 @@ def evaluar_conversacion(pedido: PedidoEvaluacion):
         return evaluar(cliente, MODELO_EVALUACION, pedido.escenario, pedido.nivel, turnos)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"No se pudo generar la evaluación: {e}") from e
+
+
+class PedidoPista(BaseModel):
+    escenario: str
+    nivel: str
+    turnos: list[Turno] = Field(max_length=12)
+
+
+@app.post("/api/pista", response_model=Pista)
+def pedir_pista(pedido: PedidoPista):
+    """Traduce lo último que dijo el tutor y sugiere qué responder."""
+    if pedido.escenario not in ESCENARIOS or pedido.nivel not in NIVELES:
+        raise HTTPException(status_code=400, detail="Escenario o nivel no válido.")
+    turnos = [t.model_dump() for t in pedido.turnos if t.texto.strip()]
+    if not any(t["rol"] == "tutor" for t in turnos):
+        raise HTTPException(status_code=400, detail="Espera a que el tutor diga algo para pedir una pista.")
+    cliente = cliente_openai()
+    try:
+        return dar_pista(cliente, MODELO_EVALUACION, pedido.escenario, pedido.nivel, turnos)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"No se pudo generar la pista: {e}") from e

@@ -2,16 +2,18 @@
 
 Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA que hace un papel (entrevistador, mesero, recepcionista). Al terminar recibes una **evaluación en español**: nota, errores con su corrección, frases más naturales, vocabulario útil y consejos.
 
-- 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC)
-- 📝 Transcripción en vivo de lo que dices tú y el tutor
+- 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma
+- 🔮 Orbe animado que reacciona al volumen real de tu voz y la del tutor, con un anillo que marca el tiempo de la sesión
+- 💬 Subtítulos grandes de lo que dice el tutor y transcripción completa desplegable
+- 💡 Botón **"Dame una pista"**: traduce al español lo que te dijo el tutor y te sugiere 2 respuestas
 - 🎚️ 3 escenarios y 3 niveles (Básico, Intermedio, Avanzado); en Básico el tutor habla más despacio
-- ✅ Evaluación final con un modelo de texto (`gpt-6-luna`)
+- ✅ Evaluación final interactiva: nota animada, pestañas (correcciones, frases más naturales, vocabulario, consejos), tarjetas de vocabulario que se voltean y confeti si sacas 8 o más
 - 💸 Control de costos: duración máxima por sesión, límite de sesiones por día y costo estimado en vivo
 - 🔐 Tu API Key nunca llega al navegador: el servidor crea una clave temporal para cada sesión
 
-| Conversación | Evaluación |
-|---|---|
-| ![Conversación](docs/conversacion.png) | ![Evaluación](docs/evaluacion.png) |
+| Inicio | Conversación | Evaluación |
+|---|---|---|
+| ![Inicio](docs/inicio.png) | ![Conversación](docs/conversacion.png) | ![Evaluación](docs/evaluacion.png) |
 
 ---
 
@@ -65,6 +67,7 @@ uvicorn main:app --reload
 | `OPENAI_API_KEY` | Tu clave de OpenAI | — |
 | `MAX_MINUTOS_SESION` | Duración máxima de cada conversación | `5` |
 | `MAX_SESIONES_POR_DIA` | Sesiones por día para cada visitante | `20` |
+| `RAPIDEZ_RESPUESTA` | Qué tan rápido responde el tutor cuando dejas de hablar: `high`, `medium` o `low`. Si te interrumpe antes de terminar, usa `medium` | `high` |
 | `MODELO_VOZ` | Modelo de voz en tiempo real | `gpt-realtime-2.1-mini` |
 | `MODELO_TRANSCRIPCION` | Modelo para transcribir tu voz | `gpt-transcribe` |
 | `MODELO_EVALUACION` | Modelo que hace la evaluación final | `gpt-6-luna` |
@@ -81,7 +84,7 @@ Con `gpt-realtime-2.1-mini`, una conversación cuesta del orden de **US$0,02 a 0
 ```
 Navegador ──(1) pide clave temporal──▶ Servidor FastAPI ──▶ OpenAI /v1/realtime/client_secrets
 Navegador ◀══(2) voz en tiempo real por WebRTC══▶ OpenAI /v1/realtime/calls
-Navegador ──(3) envía la transcripción──▶ Servidor ──▶ gpt-6-luna ──▶ evaluación
+Navegador ──(3) pide pistas y la evaluación──▶ Servidor ──▶ gpt-6-luna
 ```
 
 ## 📁 Estructura
@@ -92,10 +95,12 @@ escenarios.py      # Escenarios y niveles (agrega los tuyos aquí)
 evaluador.py       # Evaluación con salida estructurada (Pydantic)
 static/index.html  # Interfaz
 static/app.js      # WebRTC, transcripción en vivo, cronómetro y costo
-static/styles.css  # Estilos (tema oscuro)
+static/styles.css  # Estilos (tema claro: colores en las variables del inicio)
 docs/              # Capturas para este README
 .env.example       # Plantilla de configuración
 ```
+
+**Cambiar los colores:** todos están como variables al inicio de `static/styles.css` (tema actual: claro, verde y azul).
 
 **Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, el ícono, la descripción y el `rol` (en inglés), y reinicia el servidor.
 

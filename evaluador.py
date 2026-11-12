@@ -64,3 +64,39 @@ def evaluar(cliente, modelo: str, escenario: str, nivel: str, turnos: list[dict]
         text_format=Evaluacion,
     )
     return respuesta.output_parsed
+
+
+# -----------------------------
+# Pistas durante la conversación
+# -----------------------------
+class Sugerencia(BaseModel):
+    ingles: str = Field(description="Respuesta corta que el estudiante podría decir, en inglés")
+    espanol: str = Field(description="Traducción al español")
+
+
+class Pista(BaseModel):
+    traduccion: str = Field(description="Traducción al español de lo último que dijo el tutor")
+    sugerencias: list[Sugerencia] = Field(description="Exactamente 2 respuestas posibles, adecuadas al nivel")
+
+
+INSTRUCCIONES_PISTA = """Ayudas a un estudiante hispanohablante que practica inglés hablado y se quedó
+sin saber qué decir. Traduce al español lo ÚLTIMO que dijo el tutor y propone exactamente 2 respuestas
+cortas y naturales en inglés (con su traducción) que el estudiante podría decir ahora, adecuadas a su nivel."""
+
+
+def dar_pista(cliente, modelo: str, escenario: str, nivel: str, turnos: list[dict]) -> Pista:
+    contexto = (
+        f"Escenario: {ESCENARIOS[escenario]['titulo']}\n"
+        f"Nivel del estudiante: {NIVELES[nivel]['titulo']}\n\n"
+        f"Conversación reciente:\n{armar_transcripcion(turnos)}"
+    )
+    respuesta = cliente.responses.parse(
+        model=modelo,
+        reasoning={"effort": "none"},  # sin razonamiento: la pista debe llegar rápido
+        input=[
+            {"role": "system", "content": INSTRUCCIONES_PISTA},
+            {"role": "user", "content": contexto},
+        ],
+        text_format=Pista,
+    )
+    return respuesta.output_parsed

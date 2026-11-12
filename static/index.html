@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutor de inglés por voz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -30,7 +30,7 @@
       <div id="niveles" class="niveles"></div>
 
       <button id="btn-empezar" class="boton principal grande" disabled>
-        <span>🎤</span> Empezar conversación
+        <span>📞</span> Elige un escenario para empezar
       </button>
       <p class="nota" id="nota-limite"></p>
       <div id="error-inicio" class="alerta oculto"></div>
@@ -38,10 +38,13 @@
 
     <!-- PANTALLA 2: conversación -->
     <section id="pantalla-conversacion" class="pantalla">
-      <div class="cabecera-conversacion">
-        <div>
-          <div id="titulo-conversacion" class="titulo-conv"></div>
-          <div id="estado" class="estado"><span class="punto"></span><span id="texto-estado">Conectando…</span></div>
+      <div class="escena">
+        <div class="personaje">
+          <span id="avatar" class="avatar"></span>
+          <div>
+            <div id="nombre-personaje" class="titulo-conv"></div>
+            <div id="titulo-conversacion" class="papel"></div>
+          </div>
         </div>
         <div class="medidores">
           <div class="medidor"><span class="valor" id="cronometro">0:00</span><span class="rotulo" id="rotulo-tiempo">de 5:00</span></div>
@@ -49,14 +52,35 @@
         </div>
       </div>
 
+      <div class="orbe-zona">
+        <svg class="anillo" viewBox="0 0 300 300" aria-hidden="true">
+          <circle cx="150" cy="150" r="144" class="anillo-fondo"/>
+          <circle cx="150" cy="150" r="144" class="anillo-progreso" id="anillo-progreso"/>
+        </svg>
+        <canvas id="orbe" width="300" height="300" aria-hidden="true"></canvas>
+      </div>
+
+      <div id="estado" class="estado centrado"><span class="punto"></span><span id="texto-estado">Conectando…</span></div>
+
+      <div class="subtitulos" aria-live="polite">
+        <p id="sub-tutor" class="sub-tutor"></p>
+        <p id="sub-usuario" class="sub-usuario"></p>
+      </div>
+
+      <div id="panel-pista" class="panel-pista oculto"></div>
       <div id="aviso-tiempo" class="alerta aviso oculto"></div>
-      <div id="transcripcion" class="transcripcion" aria-live="polite"></div>
 
       <div class="controles">
-        <button id="btn-silenciar" class="boton secundario">🔇 Silenciar micrófono</button>
+        <button id="btn-silenciar" class="boton secundario">🔇 Silenciar</button>
+        <button id="btn-pista" class="boton secundario">💡 Dame una pista</button>
         <button id="btn-terminar" class="boton principal">✅ Terminar y evaluar</button>
       </div>
       <div id="error-conversacion" class="alerta oculto"></div>
+
+      <details class="cajon">
+        <summary>Ver transcripción completa</summary>
+        <div id="transcripcion" class="transcripcion"></div>
+      </details>
     </section>
 
     <!-- PANTALLA 3: evaluación -->
@@ -67,7 +91,10 @@
       </div>
       <div id="evaluacion" class="oculto"></div>
       <div id="error-evaluacion" class="alerta oculto"></div>
-      <button id="btn-otra" class="boton secundario grande oculto">🔁 Practicar otra vez</button>
+      <div id="acciones-final" class="acciones-final oculto">
+        <button id="btn-repetir" class="boton principal">🔁 Repetir este escenario</button>
+        <button id="btn-otra" class="boton secundario">🧭 Elegir otro escenario</button>
+      </div>
     </section>
   </main>
 
