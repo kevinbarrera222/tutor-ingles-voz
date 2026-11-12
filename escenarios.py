@@ -6,6 +6,9 @@ y cambia sus textos. La interfaz lo muestra automáticamente.
 
 ESCENARIOS = {
     "entrevista": {
+        "personaje": "Sarah",
+        "papel": "Entrevistadora de recursos humanos",
+        "avatar": "👩‍💼",
         "titulo": "Entrevista de trabajo",
         "icono": "💼",
         "descripcion": "Responde preguntas de un entrevistador como en una entrevista real.",
@@ -18,6 +21,9 @@ ESCENARIOS = {
         ),
     },
     "restaurante": {
+        "personaje": "Mike",
+        "papel": "Mesero del restaurante",
+        "avatar": "🧑‍🍳",
         "titulo": "Pedir en un restaurante",
         "icono": "🍽️",
         "descripcion": "Pide comida, pregunta por el menú y paga la cuenta.",
@@ -29,6 +35,9 @@ ESCENARIOS = {
         ),
     },
     "hotel": {
+        "personaje": "Emma",
+        "papel": "Recepcionista del hotel",
+        "avatar": "👩‍💻",
         "titulo": "Check-in en un hotel",
         "icono": "🏨",
         "descripcion": "Haz el check-in, pregunta por servicios y resuelve un problema.",
