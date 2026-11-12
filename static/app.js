@@ -46,9 +46,12 @@ function mostrarError(id, mensaje) {
 
 function ocultar(id) { $(id).classList.add("oculto"); }
 
+const icono = (nombre) => `<svg class="ico" aria-hidden="true"><use href="#i-${nombre}"/></svg>`;
+const personajeActual = () => estado.config?.escenarios[estado.escenario]?.personaje || "Tu tutor";
+
 function cambiarEstado(clase, texto) {
   const caja = $("estado");
-  caja.className = `estado centrado ${clase}`;
+  caja.className = `estado ${clase}`;
   $("texto-estado").textContent = texto;
 }
 
@@ -87,38 +90,31 @@ async function cargarConfiguracion() {
   const { escenarios, niveles, max_minutos } = estado.config;
 
   $("escenarios").innerHTML = Object.entries(escenarios).map(([clave, e]) => `
-    <button class="tarjeta" data-escenario="${clave}" aria-pressed="false">
-      <div class="tarjeta-cabecera">
-        <span class="avatar-tarjeta">${e.avatar}</span>
-        <span class="icono-escenario">${e.icono}</span>
-      </div>
-      <div class="titulo">${escapar(e.titulo)}</div>
-      <div class="con-quien">Hablas con <b>${escapar(e.personaje)}</b> · ${escapar(e.papel)}</div>
-      <div class="desc">${escapar(e.descripcion)}</div>
+    <button class="contacto" role="radio" aria-checked="false" data-escenario="${clave}">
+      <span class="avatar-contacto" style="--color-personaje:${e.color}">${escapar(e.personaje[0])}</span>
+      <span>
+        <span class="quien-es"><span class="nombre-contacto">${escapar(e.personaje)}</span><span class="rol">${escapar(e.papel)}</span></span>
+        <span class="escenario" style="display:block"><b>${escapar(e.titulo)}.</b> <span class="detalle">${escapar(e.descripcion)}</span></span>
+      </span>
+      <span class="seleccion">${icono("check")}</span>
     </button>`).join("");
 
   $("niveles").innerHTML = Object.entries(niveles).map(([clave, n]) => `
-    <button class="nivel ${clave === estado.nivel ? "elegido" : ""}" data-nivel="${clave}">
-      <div class="titulo">${escapar(n.titulo)}</div>
-      <div class="desc">${escapar(n.descripcion)}</div>
-    </button>`).join("");
+    <button class="segmento" role="radio" aria-checked="${clave === estado.nivel}" data-nivel="${clave}">${escapar(n.titulo)}</button>`).join("");
+  $("descripcion-nivel").textContent = niveles[estado.nivel].descripcion + ".";
 
-  $("nota-limite").textContent =
-    `Cada sesión dura máximo ${formatoTiempo(max_minutos * 60)} minutos para controlar el gasto.`;
+  $("nota-limite").textContent = `Cada llamada dura máximo ${Math.round(max_minutos)} minutos.`;
 
-  document.querySelectorAll(".tarjeta").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".tarjeta").forEach((x) => { x.classList.remove("elegida"); x.setAttribute("aria-pressed", "false"); });
-    b.classList.add("elegida");
-    b.setAttribute("aria-pressed", "true");
-    const e = estado.config.escenarios[b.dataset.escenario];
-    $("btn-empezar").innerHTML = `<span>📞</span> Llamar a ${escapar(e.personaje)}`;
+  document.querySelectorAll(".contacto").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".contacto").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
     estado.escenario = b.dataset.escenario;
+    $("btn-empezar").innerHTML = `${icono("phone")}<span>Llamar a ${escapar(personajeActual())}</span>`;
     $("btn-empezar").disabled = false;
   }));
-  document.querySelectorAll(".nivel").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".nivel").forEach((x) => x.classList.remove("elegido"));
-    b.classList.add("elegido");
+  document.querySelectorAll(".segmento").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".segmento").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
     estado.nivel = b.dataset.nivel;
+    $("descripcion-nivel").textContent = niveles[estado.nivel].descripcion + ".";
   }));
 }
 
@@ -127,12 +123,12 @@ async function empezar() {
   ocultar("error-inicio");
   $("btn-empezar").disabled = true;
   Object.assign(estado, { turnos: [], costo: 0, terminado: false, silenciado: false });
-  $("transcripcion").innerHTML = "";
+  $("transcripcion").innerHTML = `<p class="vacio" id="transcripcion-vacia">Aquí aparece todo lo que se dice en la llamada.</p>`;
   $("costo").textContent = "US$0.000";
   $("cronometro").textContent = "0:00";
   $("sub-tutor").textContent = "";
   $("sub-usuario").textContent = "";
-  $("btn-silenciar").textContent = "🔇 Silenciar";
+  pintarSilencio();
   $("anillo-progreso").style.strokeDashoffset = 0;
   $("anillo-progreso").classList.remove("poco");
   estado.hablando = null;
@@ -157,12 +153,13 @@ async function empezar() {
     });
 
     const esc = estado.config.escenarios[estado.escenario];
-    $("avatar").textContent = esc.avatar;
+    $("avatar").textContent = esc.personaje[0];
+    $("avatar").style.setProperty("--color-personaje", esc.color);
     $("nombre-personaje").textContent = esc.personaje;
-    $("titulo-conversacion").textContent = `${esc.papel} · Nivel ${estado.config.niveles[estado.nivel].titulo}`;
+    $("titulo-conversacion").textContent = `${esc.papel}, nivel ${estado.config.niveles[estado.nivel].titulo.toLowerCase()}`;
     $("rotulo-tiempo").textContent = `de ${formatoTiempo(sesion.max_minutos * 60)}`;
     mostrarPantalla("conversacion");
-    cambiarEstado("", "Conectando con tu tutor…");
+    cambiarEstado("", `Conectando con ${esc.personaje}…`);
 
     // 3. Conexión WebRTC con OpenAI
     iniciarOrbe();
@@ -191,7 +188,7 @@ async function conectar(claveTemporal) {
   estado.canal = canal;
   canal.addEventListener("message", (e) => manejarEvento(JSON.parse(e.data)));
   canal.addEventListener("open", () => {
-    cambiarEstado("escuchando", "Conectado. Tu tutor va a empezar…");
+    cambiarEstado("escuchando", `En llamada con ${personajeActual()}`);
     // Pedimos al tutor que salude primero
     canal.send(JSON.stringify({ type: "response.create" }));
   });
@@ -225,7 +222,8 @@ function burbuja(id, rol) {
     const div = document.createElement("div");
     div.className = `mensaje ${rol} ${rol === "usuario" ? "pendiente" : ""}`;
     div.id = `msg-${id}`;
-    div.innerHTML = `<div class="quien">${rol === "usuario" ? "Tú" : "Tutor"}</div><div class="texto">${rol === "usuario" ? "…" : ""}</div>`;
+    div.innerHTML = `<div class="quien">${rol === "usuario" ? "Tú" : escapar(personajeActual())}</div><div class="texto">${rol === "usuario" ? "…" : ""}</div>`;
+    $("transcripcion-vacia")?.remove();
     $("transcripcion").appendChild(div);
   }
   return turno;
@@ -244,14 +242,14 @@ function manejarEvento(ev) {
   switch (ev.type) {
     case "input_audio_buffer.speech_started":
       estado.hablando = "usuario";
-      cambiarEstado("usuario", "Te estoy escuchando…");
+      cambiarEstado("usuario", "Te escucho");
       burbuja(ev.item_id, "usuario");
-      $("sub-usuario").textContent = "🎤 …";
+      $("sub-usuario").textContent = "…";
       ocultar("panel-pista");
       break;
     case "input_audio_buffer.speech_stopped":
       estado.hablando = null;
-      cambiarEstado("escuchando", "Pensando…");
+      cambiarEstado("escuchando", `${personajeActual()} está pensando`);
       break;
     case "conversation.item.input_audio_transcription.delta": {
       const t = burbuja(ev.item_id, "usuario");
@@ -288,12 +286,12 @@ function manejarEvento(ev) {
     }
     case "output_audio_buffer.started":
       estado.hablando = "tutor";
-      cambiarEstado("tutor", `${estado.config?.escenarios[estado.escenario]?.personaje || "Tu tutor"} está hablando…`);
+      cambiarEstado("tutor", `${personajeActual()} está hablando`);
       break;
     case "output_audio_buffer.cleared":
     case "output_audio_buffer.stopped":
       estado.hablando = null;
-      if (!estado.silenciado) cambiarEstado("escuchando", "Tu turno: habla en inglés 🎤");
+      if (!estado.silenciado) cambiarEstado("escuchando", "Tu turno, responde en inglés");
       break;
     case "response.done":
       sumarCosto(ev.response?.usage);
@@ -334,7 +332,7 @@ function iniciarCronometro(maxMinutos) {
     $("anillo-progreso").style.strokeDashoffset = 904.8 * Math.min(1, transcurrido / limite);
     $("anillo-progreso").classList.toggle("poco", restante <= 30);
     if (restante <= 30 && restante > 0) {
-      $("aviso-tiempo").textContent = `⏳ Quedan ${Math.ceil(restante)} segundos de sesión.`;
+      $("aviso-tiempo").textContent = `Quedan ${Math.ceil(restante)} segundos de llamada.`;
       $("aviso-tiempo").classList.remove("oculto");
     }
     if (restante <= 0) terminar();
@@ -345,9 +343,16 @@ function alternarSilencio() {
   if (!estado.microfono) return;
   estado.silenciado = !estado.silenciado;
   estado.microfono.getTracks().forEach((t) => { t.enabled = !estado.silenciado; });
-  $("btn-silenciar").textContent = estado.silenciado ? "🎤 Activar" : "🔇 Silenciar";
+  pintarSilencio();
   cambiarEstado(estado.silenciado ? "silenciado" : "escuchando",
-    estado.silenciado ? "Micrófono silenciado" : "Tu turno: habla en inglés 🎤");
+    estado.silenciado ? "Micrófono silenciado" : "Tu turno, responde en inglés");
+}
+
+function pintarSilencio() {
+  const b = $("btn-silenciar");
+  b.setAttribute("aria-pressed", String(estado.silenciado));
+  b.querySelector(".circulo").innerHTML = icono(estado.silenciado ? "mic-off" : "mic");
+  b.querySelector(".rotulo-control").textContent = estado.silenciado ? "Activar" : "Silenciar";
 }
 
 function detenerTodo() {
@@ -484,12 +489,12 @@ async function pedirPista() {
     .slice(-6)
     .map((t) => ({ rol: t.rol, texto: t.texto.slice(0, 2000) }));
   if (!turnos.some((t) => t.rol === "tutor")) {
-    panel.innerHTML = `<span class="vacio">Espera a que tu tutor diga algo y vuelve a pedir la pista.</span>`;
+    panel.innerHTML = `<p class="vacio">Espera a que ${escapar(personajeActual())} diga algo y vuelve a pedir la pista.</p>`;
     panel.classList.remove("oculto");
     return;
   }
   $("btn-pista").disabled = true;
-  panel.innerHTML = `<span class="vacio">Buscando una pista…</span>`;
+  panel.innerHTML = `<p class="vacio">Preparando tu pista…</p>`;
   panel.classList.remove("oculto");
   try {
     const pista = await pedirJSON("/api/pista", {
@@ -497,138 +502,120 @@ async function pedirPista() {
       body: JSON.stringify({ escenario: estado.escenario, nivel: estado.nivel, turnos }),
     });
     panel.innerHTML = `
-      <button class="cerrar-pista" aria-label="Cerrar pista" onclick="document.getElementById('panel-pista').classList.add('oculto')">✕</button>
-      <div class="rotulo-pista">Te dijo</div>
-      <div class="traduccion">${escapar(pista.traduccion)}</div>
-      <div class="rotulo-pista">Puedes responder</div>
+      <button class="cerrar-pista" aria-label="Cerrar pista" onclick="document.getElementById('panel-pista').classList.add('oculto')">${icono("close")}</button>
+      <h3>${escapar(personajeActual())} dijo</h3>
+      <p class="traduccion">${escapar(pista.traduccion)}</p>
+      <h3>Podrías responder</h3>
       ${pista.sugerencias.map((s) => `
         <div class="sugerencia">
           <div class="ing">${escapar(s.ingles)}</div>
           <div class="esp">${escapar(s.espanol)}</div>
         </div>`).join("")}`;
   } catch (e) {
-    panel.innerHTML = `<span class="vacio">${escapar(e.message)}</span>`;
+    panel.innerHTML = `<p class="vacio">${escapar(e.message)}</p>`;
   } finally {
     $("btn-pista").disabled = false;
   }
 }
 
 // ---------- Evaluación ----------
-function lista(items, plantilla, vacio) {
-  return items?.length ? items.map(plantilla).join("") : `<p class="vacio">${vacio}</p>`;
-}
 
 function mostrarEvaluacion(ev) {
   const minutos = estado.inicio ? (Date.now() - estado.inicio) / 60000 : 0;
-  const mensaje = ev.nota >= 9 ? "¡Excelente! 🏆" : ev.nota >= 7 ? "¡Muy bien! 💪" : ev.nota >= 5 ? "Vas por buen camino 👍" : "Sigue practicando, ¡tú puedes! 🌱";
-  const turnosUsuario = estado.turnos.filter((t) => t.rol === "usuario" && t.texto).length;
+  const titulo = ev.nota >= 9 ? "Excelente trabajo." : ev.nota >= 7 ? "Muy bien." : ev.nota >= 5 ? "Vas por buen camino." : "Sigue practicando.";
+  const respuestas = estado.turnos.filter((t) => t.rol === "usuario" && t.texto).length;
+  const errores = ev.errores || [], frases = ev.mejores_frases || [], vocab = ev.vocabulario || [];
+  const pestana = (id, texto, cuenta, activa) => `
+    <button class="pestana" role="tab" id="tab-${id}" aria-controls="${id}" aria-selected="${activa}">
+      ${texto}${cuenta != null ? `<span class="cuenta">${cuenta}</span>` : ""}
+    </button>`;
 
   $("evaluacion").innerHTML = `
-    <div class="nota-final aparecer">
-      <div class="circulo-nota" id="circulo-nota" style="--p:0"><span id="numero-nota">0</span></div>
+    <div class="resultado">
+      <div class="circulo-nota" id="circulo-nota" style="--p:0" role="img" aria-label="Nota ${ev.nota} de 10">
+        <div class="interior"><div><span class="numero" id="numero-nota">0</span><span class="de">de 10</span></div></div>
+      </div>
       <div>
-        <div class="mensaje-nota">${mensaje}</div>
-        <div>${escapar(ev.resumen)}</div>
-        <div class="chips">
-          <span class="chip">⏱️ ${formatoTiempo(minutos * 60)}</span>
-          <span class="chip">🗣️ ${turnosUsuario} respuestas</span>
-          <span class="chip">✏️ ${ev.errores?.length || 0} correcciones</span>
-          <span class="chip">💸 US$${estado.costo.toFixed(3)}</span>
-        </div>
+        <h1>${titulo}</h1>
+        <p class="resumen">${escapar(ev.resumen)}</p>
       </div>
     </div>
+
+    <dl class="estadisticas">
+      <div><dt>Duración</dt><dd>${formatoTiempo(minutos * 60)}</dd></div>
+      <div><dt>Respuestas</dt><dd>${respuestas}</dd></div>
+      <div><dt>Correcciones</dt><dd>${errores.length}</dd></div>
+      <div><dt>Costo</dt><dd>US$${estado.costo.toFixed(3)}</dd></div>
+    </dl>
 
     <div class="pestanas" role="tablist">
-      <button class="pestana activa" data-panel="p-errores" role="tab">✏️ Correcciones</button>
-      <button class="pestana" data-panel="p-frases" role="tab">💡 Más natural</button>
-      <button class="pestana" data-panel="p-vocab" role="tab">📚 Vocabulario</button>
-      <button class="pestana" data-panel="p-consejos" role="tab">🎯 Consejos</button>
+      ${pestana("p-errores", "Correcciones", errores.length, true)}
+      ${pestana("p-frases", "Frases más naturales", frases.length, false)}
+      ${pestana("p-vocab", "Vocabulario", vocab.length, false)}
+      ${pestana("p-consejos", "Consejos", null, false)}
     </div>
 
-    <div id="p-errores" class="panel-eval activo">
-      ${lista(ev.errores, (e, i) => `
-        <div class="correccion aparecer" style="animation-delay:${i * 80}ms">
-          <div class="antes">✗ ${escapar(e.original)}</div>
-          <div class="despues">✓ ${escapar(e.correccion)}</div>
-          <div class="explicacion">${escapar(e.explicacion)}</div>
-        </div>`, "¡No encontramos errores importantes! 🎉")}
+    <div id="p-errores" class="panel-eval activo" role="tabpanel">
+      ${errores.length ? `<div class="lista-correcciones">${errores.map((e) => `
+        <div class="correccion">
+          <div class="linea-correccion antes">${icono("close")}<span>${escapar(e.original)}</span></div>
+          <div class="linea-correccion despues">${icono("check")}<span>${escapar(e.correccion)}</span></div>
+          <p class="explicacion">${escapar(e.explicacion)}</p>
+        </div>`).join("")}</div>` : `<p class="vacio">No encontramos errores importantes en esta llamada.</p>`}
     </div>
 
-    <div id="p-frases" class="panel-eval">
-      ${lista(ev.mejores_frases, (f, i) => `
-        <div class="correccion aparecer" style="animation-delay:${i * 80}ms">
-          <div class="explicacion">Dijiste: ${escapar(f.original)}</div>
-          <div class="despues">✨ ${escapar(f.mejor)}</div>
-        </div>`, "Tus frases sonaron naturales.")}
+    <div id="p-frases" class="panel-eval" role="tabpanel">
+      ${frases.length ? `<div class="lista-correcciones">${frases.map((f) => `
+        <div class="correccion">
+          <p class="dijiste">Dijiste: ${escapar(f.original)}</p>
+          <div class="linea-correccion despues">${icono("check")}<span>${escapar(f.mejor)}</span></div>
+        </div>`).join("")}</div>` : `<p class="vacio">Tus frases sonaron naturales.</p>`}
     </div>
 
-    <div id="p-vocab" class="panel-eval">
-      <p class="ayuda-vocab">Toca cada tarjeta para ver su significado 👆</p>
-      <div class="tarjetas-vocab">
-        ${lista(ev.vocabulario, (v) => `
+    <div id="p-vocab" class="panel-eval" role="tabpanel">
+      ${vocab.length ? `
+        <p class="ayuda-vocab">Toca una tarjeta para ver su significado y un ejemplo.</p>
+        <div class="tarjetas-vocab">${vocab.map((v) => `
           <button class="flip" aria-label="Ver significado de ${escapar(v.palabra)}">
-            <span class="cara frente"><span class="palabra">${escapar(v.palabra)}</span></span>
+            <span class="cara frente">
+              <span class="palabra">${escapar(v.palabra)}</span>
+              <span class="girar">${icono("translate")}Ver significado</span>
+            </span>
             <span class="cara reverso">
               <b>${escapar(v.significado)}</b>
-              <span class="ejemplo">"${escapar(v.ejemplo)}"</span>
+              <span class="ejemplo">${escapar(v.ejemplo)}</span>
             </span>
-          </button>`, "Sin vocabulario sugerido.")}
-      </div>
+          </button>`).join("")}</div>` : `<p class="vacio">Sin vocabulario sugerido para esta llamada.</p>`}
     </div>
 
-    <div id="p-consejos" class="panel-eval">
-      <ol class="consejos">${(ev.consejos || []).map((c) => `<li>${escapar(c)}</li>`).join("")}</ol>
+    <div id="p-consejos" class="panel-eval" role="tabpanel">
+      <ul class="consejos">${(ev.consejos || []).map((c) => `<li>${icono("check")}<span>${escapar(c)}</span></li>`).join("")}</ul>
     </div>`;
   $("evaluacion").classList.remove("oculto");
+  $("texto-repetir").textContent = `Repetir con ${personajeActual()}`;
 
   // Pestañas
   document.querySelectorAll(".pestana").forEach((p) => p.addEventListener("click", () => {
-    document.querySelectorAll(".pestana").forEach((x) => x.classList.toggle("activa", x === p));
-    document.querySelectorAll(".panel-eval").forEach((x) => x.classList.toggle("activo", x.id === p.dataset.panel));
+    document.querySelectorAll(".pestana").forEach((x) => x.setAttribute("aria-selected", String(x === p)));
+    document.querySelectorAll(".panel-eval").forEach((x) => x.classList.toggle("activo", x.id === p.getAttribute("aria-controls")));
   }));
-  // Tarjetas que se voltean
+  // Tarjetas de vocabulario que se voltean
   document.querySelectorAll(".flip").forEach((f) => f.addEventListener("click", () => f.classList.toggle("volteada")));
 
   animarNota(ev.nota);
-  if (ev.nota >= 8) confeti();
 }
 
 function animarNota(nota) {
-  const duracion = 1200, inicio = performance.now();
+  const pocoMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const duracion = pocoMovimiento ? 0 : 1100, inicio = performance.now();
   const paso = (ahora) => {
-    const avance = Math.min(1, (ahora - inicio) / duracion);
+    const avance = duracion ? Math.min(1, (ahora - inicio) / duracion) : 1;
     const suave = 1 - Math.pow(1 - avance, 3);
     $("numero-nota").textContent = Math.round(nota * suave);
     $("circulo-nota").style.setProperty("--p", nota * 10 * suave);
     if (avance < 1) requestAnimationFrame(paso);
   };
   requestAnimationFrame(paso);
-}
-
-function confeti() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const lienzo = document.createElement("canvas");
-  lienzo.className = "confeti";
-  document.body.appendChild(lienzo);
-  const ctx = lienzo.getContext("2d");
-  lienzo.width = innerWidth; lienzo.height = innerHeight;
-  const colores = ["#22C55E", "#3B82F6", "#FACC15", "#F472B6", "#38BDF8"];
-  const piezas = Array.from({ length: 140 }, () => ({
-    x: innerWidth / 2 + (Math.random() - 0.5) * 200, y: innerHeight * 0.3,
-    vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
-    giro: Math.random() * 6, color: colores[Math.floor(Math.random() * colores.length)],
-  }));
-  const inicio = performance.now();
-  const cuadro = (ahora) => {
-    ctx.clearRect(0, 0, lienzo.width, lienzo.height);
-    for (const p of piezas) {
-      p.vy += 0.35; p.x += p.vx; p.y += p.vy; p.giro += 0.2;
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.giro);
-      ctx.fillStyle = p.color; ctx.fillRect(-4, -2, 8, 4); ctx.restore();
-    }
-    if (ahora - inicio < 2500) requestAnimationFrame(cuadro); else lienzo.remove();
-  };
-  requestAnimationFrame(cuadro);
 }
 
 // ---------- Eventos de botones ----------

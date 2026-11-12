@@ -7,6 +7,7 @@ y cambia sus textos. La interfaz lo muestra automáticamente.
 ESCENARIOS = {
     "entrevista": {
         "personaje": "Sarah",
+        "color": "#15803D",  # color del avatar (iniciales)
         "papel": "Entrevistadora de recursos humanos",
         "avatar": "👩‍💼",
         "titulo": "Entrevista de trabajo",
@@ -22,6 +23,7 @@ ESCENARIOS = {
     },
     "restaurante": {
         "personaje": "Mike",
+        "color": "#2563EB",  # color del avatar (iniciales)
         "papel": "Mesero del restaurante",
         "avatar": "🧑‍🍳",
         "titulo": "Pedir en un restaurante",
@@ -36,6 +38,7 @@ ESCENARIOS = {
     },
     "hotel": {
         "personaje": "Emma",
+        "color": "#0F766E",  # color del avatar (iniciales)
         "papel": "Recepcionista del hotel",
         "avatar": "👩‍💻",
         "titulo": "Check-in en un hotel",

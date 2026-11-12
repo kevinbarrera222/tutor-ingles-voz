@@ -39,6 +39,15 @@ app = FastAPI(title="Tutor de inglés por voz")
 app.mount("/static", StaticFiles(directory=CARPETA_STATIC), name="static")
 
 
+@app.middleware("http")
+async def sin_cache(request: Request, call_next):
+    """Evita que el navegador muestre una versión vieja de la página después de actualizar."""
+    respuesta = await call_next(request)
+    if request.url.path == "/" or request.url.path.startswith("/static/"):
+        respuesta.headers["Cache-Control"] = "no-cache"
+    return respuesta
+
+
 def cliente_openai() -> OpenAI:
     if not os.getenv("OPENAI_API_KEY"):
         raise HTTPException(
@@ -82,7 +91,7 @@ def inicio():
 def configuracion():
     """Escenarios, niveles y límites para armar la pantalla de inicio."""
     return {
-        "escenarios": {k: {c: v[c] for c in ("titulo", "icono", "descripcion", "personaje", "papel", "avatar")} for k, v in ESCENARIOS.items()},
+        "escenarios": {k: {c: v[c] for c in ("titulo", "icono", "descripcion", "personaje", "papel", "avatar", "color")} for k, v in ESCENARIOS.items()},
         "niveles": {k: {c: v[c] for c in ("titulo", "descripcion")} for k, v in NIVELES.items()},
         "max_minutos": MAX_MINUTOS_SESION,
         "modelo_voz": MODELO_VOZ,
