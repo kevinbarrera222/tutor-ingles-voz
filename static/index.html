@@ -5,95 +5,146 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutor de inglés por voz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <!-- Íconos de línea (se usan con <svg><use href="#i-nombre"/></svg>) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.6 3.5h2.7l1.6 4.3-2.1 1.3a10.6 10.6 0 0 0 6.1 6.1l1.3-2.1 4.3 1.6v2.7a2 2 0 0 1-2.2 2A15.8 15.8 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z"/></symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0M12 17v4.5"/></symbol>
+      <symbol id="i-mic-off" viewBox="0 0 24 24"><path d="M15 9.3V5.5a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 5.1 2.1M18.5 10.5a6.5 6.5 0 0 1-1 3.4M5.5 10.5a6.5 6.5 0 0 0 10.1 5.4M12 17v4.5M3 3l18 18"/></symbol>
+      <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21.5h3M12 2.5a6.5 6.5 0 0 0-3.8 11.8c.6.5.8 1 .8 1.7v.5h6V16c0-.7.3-1.2.8-1.7A6.5 6.5 0 0 0 12 2.5z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6.5 9.5 17 4 11.5"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.6L3.5 20.5l1-4.4A8.5 8.5 0 1 1 20.5 12z"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 0 1-14.8 5.7M3.5 12A8.5 8.5 0 0 1 18.3 6.3M18.5 2.5v4h-4M5.5 21.5v-4h4"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+      <symbol id="i-translate" viewBox="0 0 24 24"><path d="M4 5.5h9M8.5 3.5v2M6 5.5c.7 3 2.6 5.4 5.5 6.8M11 5.5c-.8 3.6-3.3 6.4-7 7.8M13 20.5l4-9 4 9M14.3 17.5h5.4"/></symbol>
+    </defs>
+  </svg>
+
   <header class="barra">
-    <div class="marca">
-      <span class="logo">🎙️</span>
-      <span>Tutor de inglés <b>por voz</b></span>
-    </div>
+    <a class="marca" href="/" aria-label="Tutor de inglés, inicio">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="#16A34A"/>
+        <path d="M9 12.5v7M13 9.5v13M17 11.5v9M21 13.5v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <span>Tutor de inglés</span>
+    </a>
     <span class="etiqueta">Prototipo</span>
   </header>
 
   <main>
-    <!-- PANTALLA 1: elegir escenario y nivel -->
-    <section id="pantalla-inicio" class="pantalla activa">
-      <h1>Practica inglés hablando</h1>
-      <p class="sub">Elige una situación y conversa en voz alta con tu tutor. Al terminar, recibes una evaluación con tus errores y cómo mejorar.</p>
+    <!-- PANTALLA 1: elegir con quién practicar -->
+    <section id="pantalla-inicio" class="pantalla activa inicio">
+      <div class="hero">
+        <h1>Practica inglés hablando, como en una llamada real.</h1>
+        <p class="sub">Eliges con quién hablar y conversas en voz alta. Al colgar recibes una evaluación con tus errores corregidos, frases más naturales y vocabulario nuevo.</p>
+        <ul class="ventajas">
+          <li><svg class="ico"><use href="#i-mic"/></svg>Tu tutor te escucha y te responde en tiempo real.</li>
+          <li><svg class="ico"><use href="#i-bulb"/></svg>Si te quedas sin palabras, pide una pista en español.</li>
+          <li><svg class="ico"><use href="#i-check"/></svg>Al terminar, ves qué mejorar y cómo decirlo mejor.</li>
+        </ul>
+      </div>
 
-      <h2>1. Escenario</h2>
-      <div id="escenarios" class="tarjetas"></div>
+      <div class="marcador">
+        <h2>¿Con quién quieres practicar?</h2>
+        <div id="escenarios" class="contactos" role="radiogroup" aria-label="Escenario"></div>
 
-      <h2>2. Tu nivel</h2>
-      <div id="niveles" class="niveles"></div>
+        <h2 class="titulo-nivel">Tu nivel de inglés</h2>
+        <div id="niveles" class="segmentado" role="radiogroup" aria-label="Nivel"></div>
+        <p id="descripcion-nivel" class="descripcion-nivel"></p>
 
-      <button id="btn-empezar" class="boton principal grande" disabled>
-        <span>📞</span> Elige un escenario para empezar
-      </button>
-      <p class="nota" id="nota-limite"></p>
-      <div id="error-inicio" class="alerta oculto"></div>
+        <button id="btn-empezar" class="boton principal ancho" disabled>
+          <svg class="ico"><use href="#i-phone"/></svg><span>Elige con quién practicar</span>
+        </button>
+        <p class="nota" id="nota-limite"></p>
+        <div id="error-inicio" class="alerta oculto" role="alert"></div>
+      </div>
     </section>
 
-    <!-- PANTALLA 2: conversación -->
+    <!-- PANTALLA 2: la llamada -->
     <section id="pantalla-conversacion" class="pantalla">
-      <div class="escena">
+      <div class="cabecera-llamada">
         <div class="personaje">
           <span id="avatar" class="avatar"></span>
           <div>
-            <div id="nombre-personaje" class="titulo-conv"></div>
+            <div id="nombre-personaje" class="nombre"></div>
             <div id="titulo-conversacion" class="papel"></div>
           </div>
         </div>
-        <div class="medidores">
-          <div class="medidor"><span class="valor" id="cronometro">0:00</span><span class="rotulo" id="rotulo-tiempo">de 5:00</span></div>
-          <div class="medidor"><span class="valor" id="costo">US$0.000</span><span class="rotulo">costo estimado</span></div>
+        <dl class="medidores">
+          <div><dt>Tiempo</dt><dd><span id="cronometro">0:00</span> <span class="tenue" id="rotulo-tiempo">de 5:00</span></dd></div>
+          <div><dt>Costo estimado</dt><dd id="costo">US$0.000</dd></div>
+        </dl>
+      </div>
+
+      <div class="llamada">
+        <div class="escenario-voz">
+          <div class="orbe-zona">
+            <svg class="anillo" viewBox="0 0 300 300" aria-hidden="true">
+              <circle cx="150" cy="150" r="144" class="anillo-fondo"/>
+              <circle cx="150" cy="150" r="144" class="anillo-progreso" id="anillo-progreso"/>
+            </svg>
+            <canvas id="orbe" width="300" height="300" aria-hidden="true"></canvas>
+          </div>
+
+          <div id="estado" class="estado" role="status"><span class="punto"></span><span id="texto-estado">Conectando…</span></div>
+
+          <div class="subtitulos" aria-live="polite">
+            <p id="sub-tutor" class="sub-tutor"></p>
+            <p id="sub-usuario" class="sub-usuario"></p>
+          </div>
+
+          <div id="aviso-tiempo" class="alerta aviso oculto" role="status"></div>
+          <div id="error-conversacion" class="alerta oculto" role="alert"></div>
+
+          <div class="controles">
+            <button id="btn-silenciar" class="control" aria-pressed="false">
+              <span class="circulo"><svg class="ico"><use href="#i-mic"/></svg></span>
+              <span class="rotulo-control">Silenciar</span>
+            </button>
+            <button id="btn-pista" class="control">
+              <span class="circulo"><svg class="ico"><use href="#i-bulb"/></svg></span>
+              <span class="rotulo-control">Pista</span>
+            </button>
+            <button id="btn-terminar" class="boton principal">
+              <svg class="ico"><use href="#i-check"/></svg><span>Terminar y evaluar</span>
+            </button>
+          </div>
         </div>
+
+        <aside class="lateral" aria-label="Apoyo durante la llamada">
+          <div id="panel-pista" class="panel-pista oculto"></div>
+          <div class="panel-transcripcion">
+            <h2 class="titulo-panel"><svg class="ico"><use href="#i-chat"/></svg>Transcripción</h2>
+            <div id="transcripcion" class="transcripcion">
+              <p class="vacio" id="transcripcion-vacia">Aquí aparece todo lo que se dice en la llamada.</p>
+            </div>
+          </div>
+        </aside>
       </div>
-
-      <div class="orbe-zona">
-        <svg class="anillo" viewBox="0 0 300 300" aria-hidden="true">
-          <circle cx="150" cy="150" r="144" class="anillo-fondo"/>
-          <circle cx="150" cy="150" r="144" class="anillo-progreso" id="anillo-progreso"/>
-        </svg>
-        <canvas id="orbe" width="300" height="300" aria-hidden="true"></canvas>
-      </div>
-
-      <div id="estado" class="estado centrado"><span class="punto"></span><span id="texto-estado">Conectando…</span></div>
-
-      <div class="subtitulos" aria-live="polite">
-        <p id="sub-tutor" class="sub-tutor"></p>
-        <p id="sub-usuario" class="sub-usuario"></p>
-      </div>
-
-      <div id="panel-pista" class="panel-pista oculto"></div>
-      <div id="aviso-tiempo" class="alerta aviso oculto"></div>
-
-      <div class="controles">
-        <button id="btn-silenciar" class="boton secundario">🔇 Silenciar</button>
-        <button id="btn-pista" class="boton secundario">💡 Dame una pista</button>
-        <button id="btn-terminar" class="boton principal">✅ Terminar y evaluar</button>
-      </div>
-      <div id="error-conversacion" class="alerta oculto"></div>
-
-      <details class="cajon">
-        <summary>Ver transcripción completa</summary>
-        <div id="transcripcion" class="transcripcion"></div>
-      </details>
     </section>
 
     <!-- PANTALLA 3: evaluación -->
     <section id="pantalla-evaluacion" class="pantalla">
       <div id="cargando-evaluacion" class="cargando">
         <div class="spinner"></div>
-        <p>Tu profesor está revisando la conversación…</p>
+        <p>Revisando tu conversación…</p>
       </div>
       <div id="evaluacion" class="oculto"></div>
-      <div id="error-evaluacion" class="alerta oculto"></div>
+      <div id="error-evaluacion" class="alerta oculto" role="alert"></div>
       <div id="acciones-final" class="acciones-final oculto">
-        <button id="btn-repetir" class="boton principal">🔁 Repetir este escenario</button>
-        <button id="btn-otra" class="boton secundario">🧭 Elegir otro escenario</button>
+        <button id="btn-repetir" class="boton principal">
+          <svg class="ico"><use href="#i-refresh"/></svg><span id="texto-repetir">Repetir esta práctica</span>
+        </button>
+        <button id="btn-otra" class="boton secundario">
+          <svg class="ico"><use href="#i-grid"/></svg><span>Elegir otra práctica</span>
+        </button>
       </div>
     </section>
   </main>

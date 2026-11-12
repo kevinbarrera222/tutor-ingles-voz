@@ -2,12 +2,13 @@
 
 Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA que hace un papel (entrevistador, mesero, recepcionista). Al terminar recibes una **evaluación en español**: nota, errores con su corrección, frases más naturales, vocabulario útil y consejos.
 
-- 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma
+- 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma, con la transcripción siempre visible al lado
 - 🔮 Orbe animado que reacciona al volumen real de tu voz y la del tutor, con un anillo que marca el tiempo de la sesión
-- 💬 Subtítulos grandes de lo que dice el tutor y transcripción completa desplegable
+- 💬 Subtítulos grandes de lo que dice el tutor
 - 💡 Botón **"Dame una pista"**: traduce al español lo que te dijo el tutor y te sugiere 2 respuestas
 - 🎚️ 3 escenarios y 3 niveles (Básico, Intermedio, Avanzado); en Básico el tutor habla más despacio
-- ✅ Evaluación final interactiva: nota animada, pestañas (correcciones, frases más naturales, vocabulario, consejos), tarjetas de vocabulario que se voltean y confeti si sacas 8 o más
+- ✅ Evaluación final: nota animada, estadísticas de la llamada y pestañas con correcciones, frases más naturales, vocabulario (tarjetas que se voltean) y consejos
+- 🎨 Diseño claro y profesional (blanco, verde y azul, tipografía Instrument Sans), adaptado a celular
 - 💸 Control de costos: duración máxima por sesión, límite de sesiones por día y costo estimado en vivo
 - 🔐 Tu API Key nunca llega al navegador: el servidor crea una clave temporal para cada sesión
 
@@ -100,7 +101,7 @@ docs/              # Capturas para este README
 .env.example       # Plantilla de configuración
 ```
 
-**Cambiar los colores:** todos están como variables al inicio de `static/styles.css` (tema actual: claro, verde y azul).
+**Cambiar los colores o la tipografía:** todo está en las variables de `:root` al inicio de `static/styles.css`. El color de cada personaje está en `escenarios.py` (campo `color`).
 
 **Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, el ícono, la descripción y el `rol` (en inglés), y reinicia el servidor.
 
