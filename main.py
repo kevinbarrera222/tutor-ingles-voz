@@ -1,12 +1,15 @@
 """Tutor de inglés por voz — servidor (FastAPI).
 
 El navegador habla directamente con la API Realtime de OpenAI por WebRTC.
-Este servidor solo:
-  1. crea una clave temporal para cada sesión (la API Key nunca llega al navegador),
-  2. evalúa la conversación al final con un modelo de texto.
+Este servidor:
+  1. crea una clave temporal para cada llamada (la API Key nunca llega al navegador),
+  2. crea escenarios personalizados, revisa las misiones y da pistas durante la llamada,
+  3. evalúa la conversación al final y verifica las frases que el estudiante repite.
 """
 
+import base64
 import os
+import random
 import threading
 from datetime import date
 from pathlib import Path
@@ -20,7 +23,8 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from escenarios import ESCENARIOS, NIVELES, construir_instrucciones
-from evaluador import Evaluacion, Pista, dar_pista, evaluar
+from evaluador import Evaluacion, Pista, crear_escenario, dar_pista, evaluar, revisar_misiones
+from practica import ResultadoFrase, comparar, transcribir
 
 load_dotenv()
 
@@ -30,9 +34,12 @@ MODELO_EVALUACION = os.getenv("MODELO_EVALUACION", "gpt-6-luna")
 VOZ = os.getenv("VOZ", "marin")
 MAX_MINUTOS_SESION = float(os.getenv("MAX_MINUTOS_SESION", "5"))
 MAX_SESIONES_POR_DIA = int(os.getenv("MAX_SESIONES_POR_DIA", "20"))
+# Pistas, misiones, escenarios personalizados y frases verificadas (cada tipo por separado)
+MAX_AYUDAS_POR_DIA = int(os.getenv("MAX_AYUDAS_POR_DIA", "300"))
 # Qué tan rápido responde el tutor cuando dejas de hablar: high (rápido), medium o low (espera más)
 RAPIDEZ_RESPUESTA = os.getenv("RAPIDEZ_RESPUESTA", "high")
 
+COLORES_PERSONALIZADOS = ["#7C3AED", "#C2410C", "#BE185D", "#0369A1", "#4D7C0F"]
 CARPETA_STATIC = Path(__file__).parent / "static"
 
 app = FastAPI(title="Tutor de inglés por voz")
@@ -58,25 +65,77 @@ def cliente_openai() -> OpenAI:
 
 
 # -----------------------------
-# Límite simple de sesiones por día (por IP), para cuidar el saldo
+# Límites por día (por IP), para cuidar el saldo
 # -----------------------------
 _lock = threading.Lock()
-_uso: dict[str, int] = {}
+_uso: dict[tuple[str, str], int] = {}
 _dia = date.today()
 
 
-def registrar_sesion(ip: str) -> None:
+def limitar(request: Request, tipo: str, maximo: int, mensaje: str) -> None:
     global _dia
+    ip = request.client.host if request.client else "desconocido"
     with _lock:
         if date.today() != _dia:
             _dia = date.today()
             _uso.clear()
-        if _uso.get(ip, 0) >= MAX_SESIONES_POR_DIA:
-            raise HTTPException(
-                status_code=429,
-                detail=f"Llegaste al límite de {MAX_SESIONES_POR_DIA} sesiones por hoy. Vuelve mañana.",
-            )
-        _uso[ip] = _uso.get(ip, 0) + 1
+        if _uso.get((ip, tipo), 0) >= maximo:
+            raise HTTPException(status_code=429, detail=mensaje)
+        _uso[(ip, tipo)] = _uso.get((ip, tipo), 0) + 1
+
+
+def limitar_ayuda(request: Request, tipo: str) -> None:
+    limitar(request, tipo, MAX_AYUDAS_POR_DIA, "Llegaste al límite de uso de hoy para esta función. Vuelve mañana.")
+
+
+# -----------------------------
+# Escenarios (predefinidos o personalizados)
+# -----------------------------
+class EscenarioPersonalizado(BaseModel):
+    personaje: str = Field(min_length=1, max_length=30)
+    papel: str = Field(max_length=80)
+    titulo: str = Field(max_length=80)
+    descripcion: str = Field(max_length=240)
+    rol: str = Field(min_length=10, max_length=1500)
+    objetivos: list[str] = Field(default_factory=list, max_length=5)
+    color: str = Field(default="#7C3AED", pattern=r"^#[0-9A-Fa-f]{6}$")
+
+
+class ConEscenario(BaseModel):
+    """Base de los pedidos: o un escenario predefinido (clave) o uno personalizado."""
+    escenario: str | None = None
+    personalizado: EscenarioPersonalizado | None = None
+    nivel: str
+
+    def resolver(self) -> dict:
+        if self.nivel not in NIVELES:
+            raise HTTPException(status_code=400, detail="Nivel no válido.")
+        if self.personalizado:
+            datos = self.personalizado.model_dump()
+            datos["objetivos"] = [o[:120] for o in datos["objetivos"]]
+            return datos
+        if self.escenario in ESCENARIOS:
+            return ESCENARIOS[self.escenario]
+        raise HTTPException(status_code=400, detail="Escenario no válido.")
+
+
+class Turno(BaseModel):
+    rol: Literal["usuario", "tutor"]
+    texto: str = Field(max_length=2000)
+
+
+def limpiar_turnos(turnos: list[Turno]) -> list[dict]:
+    return [t.model_dump() for t in turnos if t.texto.strip()]
+
+
+def preguntar_al_modelo(funcion, *args, error: str):
+    cliente = cliente_openai()
+    try:
+        return funcion(cliente, MODELO_EVALUACION, *args)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"{error}: {e}") from e
 
 
 # -----------------------------
@@ -90,31 +149,50 @@ def inicio():
 @app.get("/api/config")
 def configuracion():
     """Escenarios, niveles y límites para armar la pantalla de inicio."""
+    campos = ("titulo", "descripcion", "personaje", "papel", "color", "objetivos")
     return {
-        "escenarios": {k: {c: v[c] for c in ("titulo", "icono", "descripcion", "personaje", "papel", "avatar", "color")} for k, v in ESCENARIOS.items()},
+        "escenarios": {k: {c: v[c] for c in campos} for k, v in ESCENARIOS.items()},
         "niveles": {k: {c: v[c] for c in ("titulo", "descripcion")} for k, v in NIVELES.items()},
         "max_minutos": MAX_MINUTOS_SESION,
         "modelo_voz": MODELO_VOZ,
     }
 
 
-class PedidoSesion(BaseModel):
-    escenario: str
+class PedidoEscenario(BaseModel):
+    descripcion: str = Field(min_length=5, max_length=300)
     nivel: str
 
 
+@app.post("/api/escenario-personalizado", response_model=EscenarioPersonalizado)
+def escenario_personalizado(pedido: PedidoEscenario, request: Request):
+    """Crea un personaje y sus misiones a partir de la situación que describe el estudiante."""
+    if pedido.nivel not in NIVELES:
+        raise HTTPException(status_code=400, detail="Nivel no válido.")
+    cliente_openai()
+    limitar_ayuda(request, "escenario")
+    generado = preguntar_al_modelo(crear_escenario, pedido.descripcion.strip(), pedido.nivel,
+                                   error="No se pudo crear el escenario")
+    datos = generado.model_dump()
+    datos["personaje"] = (datos["personaje"].split() or ["Alex"])[0][:30]
+    datos["papel"], datos["titulo"] = datos["papel"][:80], datos["titulo"][:80]
+    datos["descripcion"], datos["rol"] = datos["descripcion"][:240], datos["rol"][:1500]
+    datos["objetivos"] = [o[:120] for o in datos["objetivos"][:4]]
+    datos["color"] = random.choice(COLORES_PERSONALIZADOS)
+    return EscenarioPersonalizado(**datos)
+
+
 @app.post("/api/sesion")
-def crear_sesion(pedido: PedidoSesion, request: Request):
-    """Crea una clave temporal de OpenAI con la configuración de la conversación."""
-    if pedido.escenario not in ESCENARIOS or pedido.nivel not in NIVELES:
-        raise HTTPException(status_code=400, detail="Escenario o nivel no válido.")
+def crear_sesion(pedido: ConEscenario, request: Request):
+    """Crea una clave temporal de OpenAI con la configuración de la llamada."""
+    escenario = pedido.resolver()
     cliente = cliente_openai()
-    registrar_sesion(request.client.host if request.client else "desconocido")
+    limitar(request, "sesion", MAX_SESIONES_POR_DIA,
+            f"Llegaste al límite de {MAX_SESIONES_POR_DIA} llamadas por hoy. Vuelve mañana.")
 
     sesion = {
         "type": "realtime",
         "model": MODELO_VOZ,
-        "instructions": construir_instrucciones(pedido.escenario, pedido.nivel),
+        "instructions": construir_instrucciones(escenario, pedido.nivel),
         "audio": {
             "input": {
                 "transcription": {"model": MODELO_TRANSCRIPCION, "language": "en"},
@@ -129,57 +207,76 @@ def crear_sesion(pedido: PedidoSesion, request: Request):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"OpenAI rechazó la sesión: {e}") from e
 
-    return {
-        "clave": secreto.value,
-        "max_minutos": MAX_MINUTOS_SESION,
-        "modelo": MODELO_VOZ,
-    }
+    return {"clave": secreto.value, "max_minutos": MAX_MINUTOS_SESION, "modelo": MODELO_VOZ}
 
 
-class Turno(BaseModel):
-    rol: Literal["usuario", "tutor"]
-    texto: str = Field(max_length=2000)
+class PedidoMisiones(ConEscenario):
+    pendientes: list[int] = Field(max_length=5)
+    turnos: list[Turno] = Field(max_length=16)
 
 
-class PedidoEvaluacion(BaseModel):
-    escenario: str
-    nivel: str
+@app.post("/api/misiones")
+def misiones(pedido: PedidoMisiones, request: Request):
+    """Revisa cuáles de las misiones pendientes ya cumplió el estudiante."""
+    objetivos = pedido.resolver().get("objetivos", [])
+    pendientes = {n: objetivos[n] for n in pedido.pendientes if 0 <= n < len(objetivos)}
+    turnos = limpiar_turnos(pedido.turnos)
+    if not pendientes or not any(t["rol"] == "usuario" for t in turnos):
+        return {"cumplidas": []}
+    cliente_openai()
+    limitar_ayuda(request, "misiones")
+    cumplidas = preguntar_al_modelo(revisar_misiones, pendientes, turnos, error="No se pudieron revisar las misiones")
+    return {"cumplidas": cumplidas}
+
+
+class PedidoPista(ConEscenario):
+    turnos: list[Turno] = Field(max_length=12)
+
+
+@app.post("/api/pista", response_model=Pista)
+def pedir_pista(pedido: PedidoPista, request: Request):
+    """Traduce lo último que dijo el tutor y sugiere qué responder."""
+    escenario = pedido.resolver()
+    turnos = limpiar_turnos(pedido.turnos)
+    if not any(t["rol"] == "tutor" for t in turnos):
+        raise HTTPException(status_code=400, detail="Espera a que el tutor diga algo para pedir una pista.")
+    cliente_openai()
+    limitar_ayuda(request, "pista")
+    return preguntar_al_modelo(dar_pista, escenario, pedido.nivel, turnos, error="No se pudo generar la pista")
+
+
+class PedidoEvaluacion(ConEscenario):
     turnos: list[Turno] = Field(max_length=200)
 
 
 @app.post("/api/evaluar", response_model=Evaluacion)
 def evaluar_conversacion(pedido: PedidoEvaluacion):
-    if pedido.escenario not in ESCENARIOS or pedido.nivel not in NIVELES:
-        raise HTTPException(status_code=400, detail="Escenario o nivel no válido.")
-    turnos = [t.model_dump() for t in pedido.turnos if t.texto.strip()]
+    escenario = pedido.resolver()
+    turnos = limpiar_turnos(pedido.turnos)
     if sum(t["rol"] == "usuario" for t in turnos) < 2:
-        raise HTTPException(
-            status_code=400,
-            detail="Habla un poco más (al menos 2 respuestas) para poder evaluarte.",
-        )
-    cliente = cliente_openai()
+        raise HTTPException(status_code=400, detail="Habla un poco más (al menos 2 respuestas) para poder evaluarte.")
+    return preguntar_al_modelo(evaluar, escenario, pedido.nivel, turnos, error="No se pudo generar la evaluación")
+
+
+class PedidoFrase(BaseModel):
+    frase: str = Field(min_length=1, max_length=300)
+    audio_base64: str = Field(max_length=3_000_000)  # ~2 MB de audio, unos 20 segundos
+    formato: Literal["webm", "ogg", "mp4", "wav", "mpeg"] = "webm"
+
+
+@app.post("/api/verificar-frase", response_model=ResultadoFrase)
+def verificar_frase(pedido: PedidoFrase, request: Request):
+    """Transcribe la grabación del estudiante y la compara con la frase correcta."""
     try:
-        return evaluar(cliente, MODELO_EVALUACION, pedido.escenario, pedido.nivel, turnos)
+        audio = base64.b64decode(pedido.audio_base64, validate=True)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"No se pudo generar la evaluación: {e}") from e
-
-
-class PedidoPista(BaseModel):
-    escenario: str
-    nivel: str
-    turnos: list[Turno] = Field(max_length=12)
-
-
-@app.post("/api/pista", response_model=Pista)
-def pedir_pista(pedido: PedidoPista):
-    """Traduce lo último que dijo el tutor y sugiere qué responder."""
-    if pedido.escenario not in ESCENARIOS or pedido.nivel not in NIVELES:
-        raise HTTPException(status_code=400, detail="Escenario o nivel no válido.")
-    turnos = [t.model_dump() for t in pedido.turnos if t.texto.strip()]
-    if not any(t["rol"] == "tutor" for t in turnos):
-        raise HTTPException(status_code=400, detail="Espera a que el tutor diga algo para pedir una pista.")
+        raise HTTPException(status_code=400, detail="La grabación llegó dañada. Inténtalo otra vez.") from e
+    if len(audio) < 1000:
+        raise HTTPException(status_code=400, detail="La grabación quedó vacía. Toca Repetir y di la frase completa.")
     cliente = cliente_openai()
+    limitar_ayuda(request, "frase")
     try:
-        return dar_pista(cliente, MODELO_EVALUACION, pedido.escenario, pedido.nivel, turnos)
+        dicho = transcribir(cliente, MODELO_TRANSCRIPCION, audio, pedido.formato)
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"No se pudo generar la pista: {e}") from e
+        raise HTTPException(status_code=502, detail=f"No se pudo transcribir tu grabación: {e}") from e
+    return comparar(pedido.frase, dicho)
