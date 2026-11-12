@@ -13,6 +13,12 @@ ESCENARIOS = {
         "titulo": "Entrevista de trabajo",
         "icono": "💼",
         "descripcion": "Responde preguntas de un entrevistador como en una entrevista real.",
+        "objetivos": [  # misiones que se marcan solas durante la llamada
+            "Preséntate y di a qué te dedicas",
+            "Cuenta un logro o una experiencia de trabajo",
+            "Menciona una de tus fortalezas",
+            "Haz una pregunta sobre el trabajo",
+        ],
         "rol": (
             "You are Sarah, a friendly but professional HR interviewer at a tech company. "
             "You are interviewing the student for a job they are interested in. "
@@ -29,6 +35,12 @@ ESCENARIOS = {
         "titulo": "Pedir en un restaurante",
         "icono": "🍽️",
         "descripcion": "Pide comida, pregunta por el menú y paga la cuenta.",
+        "objetivos": [  # misiones que se marcan solas durante la llamada
+            "Pide una bebida",
+            "Haz una pregunta sobre el menú",
+            "Ordena un plato",
+            "Pide la cuenta y di cómo vas a pagar",
+        ],
         "rol": (
             "You are Mike, a cheerful waiter at an American diner. Greet the student, offer them "
             "a table and drinks, describe today's specials (a cheeseburger, a grilled chicken salad "
@@ -44,6 +56,12 @@ ESCENARIOS = {
         "titulo": "Check-in en un hotel",
         "icono": "🏨",
         "descripcion": "Haz el check-in, pregunta por servicios y resuelve un problema.",
+        "objetivos": [  # misiones que se marcan solas durante la llamada
+            "Da tu nombre y los datos de tu reserva",
+            "Pregunta por el desayuno o el Wi-Fi",
+            "Negocia con amabilidad una habitación alternativa",
+            "Pregunta a qué hora es el check-out",
+        ],
         "rol": (
             "You are Emma, a receptionist at a hotel in New York. Help the student check in: ask "
             "for their name and reservation, ID and payment card, explain breakfast hours, Wi-Fi "
@@ -96,6 +114,15 @@ Rules:
 """
 
 
-def construir_instrucciones(escenario: str, nivel: str) -> str:
-    """Arma las instrucciones (system prompt) para el modelo de voz."""
-    return f"{ESCENARIOS[escenario]['rol']}\n\n{NIVELES[nivel]['guia']}\n{REGLAS_GENERALES}"
+def construir_instrucciones(escenario: dict, nivel: str) -> str:
+    """Arma las instrucciones (system prompt) para el modelo de voz.
+
+    `escenario` es uno de ESCENARIOS o un escenario personalizado con los mismos campos.
+    """
+    objetivos = "\n".join(f"- {o}" for o in escenario.get("objetivos", []))
+    guia_objetivos = (
+        "\nDuring the conversation, naturally give the student chances to do these things "
+        f"(listed in Spanish; do not read them aloud):\n{objetivos}\n"
+        if objetivos else ""
+    )
+    return f"{escenario['rol']}\n\n{NIVELES[nivel]['guia']}\n{REGLAS_GENERALES}{guia_objetivos}"

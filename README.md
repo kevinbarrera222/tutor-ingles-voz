@@ -7,6 +7,11 @@ Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA q
 - 💬 Subtítulos grandes de lo que dice el tutor
 - 💡 Botón **"Dame una pista"**: traduce al español lo que te dijo el tutor y te sugiere 2 respuestas
 - 🎚️ 3 escenarios y 3 niveles (Básico, Intermedio, Avanzado); en Básico el tutor habla más despacio
+- ✨ **Crea tu propia situación**: describes lo que quieres practicar (por ejemplo, devolver un producto) y la IA crea un personaje con su papel y sus misiones
+- 🚩 **Misiones**: cada llamada tiene 4 objetivos que se marcan solos mientras hablas
+- 🔁 **Practica tus correcciones**: escucha la frase correcta y repítela con tu voz; la app te dice qué palabras fallaste
+- 📈 **Mi progreso**: historial de llamadas, gráfico de tu nota, días seguidos y tus correcciones recientes para practicarlas otra vez
+- 🗂️ **Mi vocabulario**: las palabras de cada evaluación se guardan y se repasan con tarjetas (repetición espaciada)
 - ✅ Evaluación final: nota animada, estadísticas de la llamada y pestañas con correcciones, frases más naturales, vocabulario (tarjetas que se voltean) y consejos
 - 🎨 Diseño claro y profesional (blanco, verde y azul, tipografía Instrument Sans), adaptado a celular
 - 💸 Control de costos: duración máxima por sesión, límite de sesiones por día y costo estimado en vivo
@@ -15,6 +20,10 @@ Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA q
 | Inicio | Conversación | Evaluación |
 |---|---|---|
 | ![Inicio](docs/inicio.png) | ![Conversación](docs/conversacion.png) | ![Evaluación](docs/evaluacion.png) |
+
+| Mi progreso | Mi vocabulario |
+|---|---|
+| ![Mi progreso](docs/progreso.png) | ![Mi vocabulario](docs/vocabulario.png) |
 
 ---
 
@@ -55,7 +64,7 @@ Abre `.env` en VS Code y cambia `OPENAI_API_KEY=sk-...` por tu clave real. El ar
 uvicorn main:app --reload
 ```
 
-**5. Abre http://localhost:8000**, elige un escenario y un nivel, y dale a **Empezar conversación**. La primera vez el navegador te pedirá permiso para usar el micrófono.
+**5. Abre http://localhost:8000**, elige con quién practicar (o crea tu propia situación) y tu nivel, y dale a **Llamar**. La primera vez el navegador te pedirá permiso para usar el micrófono.
 
 > 🎧 Usa audífonos: así el micrófono no capta la voz del tutor.
 
@@ -68,6 +77,7 @@ uvicorn main:app --reload
 | `OPENAI_API_KEY` | Tu clave de OpenAI | — |
 | `MAX_MINUTOS_SESION` | Duración máxima de cada conversación | `5` |
 | `MAX_SESIONES_POR_DIA` | Sesiones por día para cada visitante | `20` |
+| `MAX_AYUDAS_POR_DIA` | Usos por día de cada ayuda (pistas, misiones, personajes, revisión de frases) para cada visitante | `300` |
 | `RAPIDEZ_RESPUESTA` | Qué tan rápido responde el tutor cuando dejas de hablar: `high`, `medium` o `low`. Si te interrumpe antes de terminar, usa `medium` | `high` |
 | `MODELO_VOZ` | Modelo de voz en tiempo real | `gpt-realtime-2.1-mini` |
 | `MODELO_TRANSCRIPCION` | Modelo para transcribir tu voz | `gpt-transcribe` |
@@ -76,7 +86,7 @@ uvicorn main:app --reload
 
 ## 💸 ¿Cuánto cuesta?
 
-Con `gpt-realtime-2.1-mini`, una conversación cuesta del orden de **US$0,02 a 0,05 por minuto**. La app muestra el **costo estimado en vivo**, calculado con los tokens que reporta OpenAI en cada respuesta. Una sesión de 5 minutos sale aproximadamente entre US$0,10 y 0,25. La transcripción y la evaluación final suman muy poco.
+Con `gpt-realtime-2.1-mini`, una conversación cuesta del orden de **US$0,02 a 0,05 por minuto**. La app muestra el **costo estimado en vivo**, calculado con los tokens que reporta OpenAI en cada respuesta. Una sesión de 5 minutos sale aproximadamente entre US$0,10 y 0,25. La evaluación final, las pistas, las misiones, la creación de personajes y la revisión de frases suman muy poco. Escuchar las frases correctas usa la voz del navegador, que es gratis.
 
 ---
 
@@ -85,17 +95,30 @@ Con `gpt-realtime-2.1-mini`, una conversación cuesta del orden de **US$0,02 a 0
 ```
 Navegador ──(1) pide clave temporal──▶ Servidor FastAPI ──▶ OpenAI /v1/realtime/client_secrets
 Navegador ◀══(2) voz en tiempo real por WebRTC══▶ OpenAI /v1/realtime/calls
-Navegador ──(3) pide pistas y la evaluación──▶ Servidor ──▶ gpt-6-luna
+Navegador ──(3) pistas, misiones, personajes y evaluación──▶ Servidor ──▶ gpt-6-luna
+Navegador ──(4) grabación al repetir una frase──▶ Servidor ──▶ gpt-transcribe
 ```
+
+| Ruta | Qué hace |
+|---|---|
+| `POST /api/sesion` | Crea la clave temporal para la llamada |
+| `POST /api/escenario-personalizado` | Crea un personaje y sus misiones a partir de tu descripción |
+| `POST /api/misiones` | Revisa qué misiones ya cumpliste |
+| `POST /api/pista` | Traduce lo último que dijo el tutor y sugiere respuestas |
+| `POST /api/evaluar` | Evaluación final de la llamada |
+| `POST /api/verificar-frase` | Transcribe tu grabación y la compara con la frase correcta |
+
+El historial y el vocabulario se guardan en el navegador (`localStorage`): no hay base de datos.
 
 ## 📁 Estructura
 
 ```
 main.py            # Servidor FastAPI: clave temporal, evaluación y límites
 escenarios.py      # Escenarios y niveles (agrega los tuyos aquí)
-evaluador.py       # Evaluación con salida estructurada (Pydantic)
+evaluador.py       # Evaluación, pistas, misiones y personajes (salida estructurada con Pydantic)
+practica.py        # Revisión de las frases que repites en voz alta
 static/index.html  # Interfaz
-static/app.js      # WebRTC, transcripción en vivo, cronómetro y costo
+static/app.js      # Llamada por WebRTC, misiones, práctica de frases, progreso y vocabulario
 static/styles.css  # Estilos (tema claro: colores en las variables del inicio)
 docs/              # Capturas para este README
 .env.example       # Plantilla de configuración
@@ -103,10 +126,10 @@ docs/              # Capturas para este README
 
 **Cambiar los colores o la tipografía:** todo está en las variables de `:root` al inicio de `static/styles.css`. El color de cada personaje está en `escenarios.py` (campo `color`).
 
-**Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, el ícono, la descripción y el `rol` (en inglés), y reinicia el servidor.
+**Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, la descripción, los `objetivos` (misiones en español) y el `rol` (en inglés), y reinicia el servidor.
 
 ## ⚠️ Limitaciones del prototipo
 
-- Sin login ni base de datos: el historial no se guarda y los límites viven en memoria (se reinician al reiniciar el servidor).
+- Sin login ni base de datos: el historial y el vocabulario viven en el navegador (si cambias de navegador o borras sus datos, se pierden) y los límites viven en memoria (se reinician al reiniciar el servidor).
 - El corte por tiempo lo hace el navegador.
 - Para publicarlo en internet se necesita HTTPS (el micrófono solo funciona en `localhost` o `https`).
