@@ -65,6 +65,17 @@ const almacen = {
   },
 };
 
+// ---------- Avatares: foto real del personaje, con su inicial si la foto no carga ----------
+function contenidoAvatar(esc) {
+  const inicial = escapar((esc?.personaje || "?")[0]);
+  const plantilla = estado.config?.url_fotos;
+  if (!esc?.foto || !plantilla) return inicial;
+  const url = plantilla.replace("{foto}", encodeURIComponent(esc.foto));
+  return `${inicial}<img src="${escapar(url)}" alt="" loading="lazy" onerror="this.remove()">`;
+}
+const avatar = (esc, clase = "avatar-contacto") =>
+  `<span class="${clase}" style="--color-personaje:${escapar(esc?.color || "#15803D")}">${contenidoAvatar(esc)}</span>`;
+
 // ---------- Escenario actual ----------
 function escenarioActual() {
   if (estado.escenario === "personalizado") return estado.personalizado;
@@ -123,7 +134,7 @@ async function cargarConfiguracion() {
 
   $("escenarios").innerHTML = Object.entries(escenarios).map(([clave, e]) => `
     <button class="contacto" role="radio" aria-checked="false" data-escenario="${clave}">
-      <span class="avatar-contacto" style="--color-personaje:${e.color}">${escapar(e.personaje[0])}</span>
+      ${avatar(e)}
       <span>
         <span class="quien-es"><span class="nombre-contacto">${escapar(e.personaje)}</span><span class="rol">${escapar(e.papel)}</span></span>
         <span class="escenario"><b>${escapar(e.titulo)}.</b> <span class="detalle">${escapar(e.descripcion)}</span></span>
@@ -198,7 +209,7 @@ function pintarVistaPersonaje() {
   const p = estado.personalizado;
   $("vista-personaje").innerHTML = `
     <div class="personaje">
-      <span class="avatar-contacto" style="--color-personaje:${escapar(p.color)}">${escapar(p.personaje[0])}</span>
+      ${avatar(p)}
       <div>
         <div class="quien-es"><span class="nombre-contacto">${escapar(p.personaje)}</span><span class="rol">${escapar(p.papel)}</span></div>
         <div class="escenario"><b>${escapar(p.titulo)}.</b> <span class="detalle">${escapar(p.descripcion)}</span></div>
@@ -243,7 +254,7 @@ async function empezar() {
 
     const sesion = await enviar("/api/sesion", cuerpoEscenario());
 
-    $("avatar").textContent = esc.personaje[0];
+    $("avatar").innerHTML = contenidoAvatar(esc);
     $("avatar").style.setProperty("--color-personaje", esc.color);
     $("nombre-personaje").textContent = esc.personaje;
     $("titulo-conversacion").textContent = `${esc.papel}, nivel ${estado.config.niveles[estado.nivel].titulo.toLowerCase()}`;
@@ -881,7 +892,7 @@ function guardarPractica(ev, segundos) {
     fecha: new Date().toISOString(),
     escenario: estado.escenario,
     personalizado: estado.escenario === "personalizado" ? estado.personalizado : null,
-    titulo: esc.titulo, personaje: esc.personaje, color: esc.color,
+    titulo: esc.titulo, personaje: esc.personaje, color: esc.color, foto: esc.foto || "",
     nivel: estado.nivel, nota: ev.nota, segundos: Math.round(segundos),
     respuestas: estado.turnos.filter((t) => t.rol === "usuario" && t.texto).length,
     misiones: [estado.misiones.filter(Boolean).length, estado.misiones.length],
@@ -1007,7 +1018,7 @@ function pintarProgreso() {
     <h2 class="titulo-bloque">Historial</h2>
     <div class="historial">${historial.slice().reverse().slice(0, 30).map((h, i) => `
       <div class="fila-historial">
-        <span class="avatar-contacto" style="--color-personaje:${escapar(h.color)}">${escapar(h.personaje[0])}</span>
+        ${avatar(h)}
         <div class="texto-historial">
           <div class="titulo-historial">${escapar(h.titulo)}</div>
           <div class="detalle">${fechaLarga(h.fecha)}, con ${escapar(h.personaje)}, ${formatoTiempo(h.segundos)} min${h.misiones?.[1] ? `, ${h.misiones[0]} de ${h.misiones[1]} misiones` : ""}</div>

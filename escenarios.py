@@ -2,14 +2,36 @@
 
 Para agregar un escenario nuevo, copia uno de los existentes en ESCENARIOS
 y cambia sus textos. La interfaz lo muestra automáticamente.
+
+Las fotos son retratos de Unsplash (licencia gratuita de Unsplash). Para cambiar una,
+abre la foto en unsplash.com, copia su enlace "images.unsplash.com/photo-..." y pega
+solo el identificador "photo-..." en el campo `foto`.
 """
+
+# Voz de OpenAI según el personaje: marin y coral suenan femeninas; cedar y ash, masculinas
+VOCES = {"femenino": ["marin", "coral"], "masculino": ["cedar", "ash"]}
+
+
+def url_foto(identificador: str, tamano: int = 160) -> str:
+    """Enlace a un retrato de Unsplash recortado en cuadrado y centrado en la cara."""
+    return (f"https://images.unsplash.com/{identificador}"
+            f"?w={tamano}&h={tamano}&fit=crop&crop=faces&auto=format&q=70")
+
+
+# Fotos para los personajes que crea el estudiante (se elige una según el género)
+FOTOS_PERSONALIZADOS = {
+    "femenino": ["photo-1621130668430-e7794ba3d9dd", "photo-1758691737587-7630b4d31d16"],
+    "masculino": ["photo-1758598497635-48cbbb1f6555", "photo-1612186001725-36c96d7e46f8"],
+}
 
 ESCENARIOS = {
     "entrevista": {
         "personaje": "Sarah",
+        "genero": "femenino",
+        "voz": "marin",
+        "foto": "photo-1758518727888-ffa196002e59",
         "color": "#15803D",  # color del avatar (iniciales)
         "papel": "Entrevistadora de recursos humanos",
-        "avatar": "👩‍💼",
         "titulo": "Entrevista de trabajo",
         "icono": "💼",
         "descripcion": "Responde preguntas de un entrevistador como en una entrevista real.",
@@ -29,9 +51,11 @@ ESCENARIOS = {
     },
     "restaurante": {
         "personaje": "Mike",
+        "genero": "masculino",
+        "voz": "cedar",
+        "foto": "photo-1585813597615-19a076b2724a",
         "color": "#2563EB",  # color del avatar (iniciales)
         "papel": "Mesero del restaurante",
-        "avatar": "🧑‍🍳",
         "titulo": "Pedir en un restaurante",
         "icono": "🍽️",
         "descripcion": "Pide comida, pregunta por el menú y paga la cuenta.",
@@ -50,9 +74,11 @@ ESCENARIOS = {
     },
     "hotel": {
         "personaje": "Emma",
+        "genero": "femenino",
+        "voz": "coral",
+        "foto": "photo-1573497160825-0d94a2724d40",
         "color": "#0F766E",  # color del avatar (iniciales)
         "papel": "Recepcionista del hotel",
-        "avatar": "👩‍💻",
         "titulo": "Check-in en un hotel",
         "icono": "🏨",
         "descripcion": "Haz el check-in, pregunta por servicios y resuelve un problema.",

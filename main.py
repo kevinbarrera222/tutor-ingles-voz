@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from escenarios import ESCENARIOS, NIVELES, construir_instrucciones
+from escenarios import ESCENARIOS, FOTOS_PERSONALIZADOS, NIVELES, VOCES, construir_instrucciones, url_foto
 from evaluador import Evaluacion, Pista, crear_escenario, dar_pista, evaluar, revisar_misiones
 from practica import ResultadoFrase, comparar, transcribir
 
@@ -31,7 +31,6 @@ load_dotenv()
 MODELO_VOZ = os.getenv("MODELO_VOZ", "gpt-realtime-2.1-mini")
 MODELO_TRANSCRIPCION = os.getenv("MODELO_TRANSCRIPCION", "gpt-transcribe")
 MODELO_EVALUACION = os.getenv("MODELO_EVALUACION", "gpt-6-luna")
-VOZ = os.getenv("VOZ", "marin")
 MAX_MINUTOS_SESION = float(os.getenv("MAX_MINUTOS_SESION", "5"))
 MAX_SESIONES_POR_DIA = int(os.getenv("MAX_SESIONES_POR_DIA", "20"))
 # Pistas, misiones, escenarios personalizados y frases verificadas (cada tipo por separado)
@@ -99,6 +98,9 @@ class EscenarioPersonalizado(BaseModel):
     rol: str = Field(min_length=10, max_length=1500)
     objetivos: list[str] = Field(default_factory=list, max_length=5)
     color: str = Field(default="#7C3AED", pattern=r"^#[0-9A-Fa-f]{6}$")
+    genero: Literal["femenino", "masculino"] = "femenino"
+    voz: str = ""
+    foto: str = ""
 
 
 class ConEscenario(BaseModel):
@@ -113,6 +115,11 @@ class ConEscenario(BaseModel):
         if self.personalizado:
             datos = self.personalizado.model_dump()
             datos["objetivos"] = [o[:120] for o in datos["objetivos"]]
+            # La voz y la foto solo pueden ser de las permitidas para ese género
+            if datos["voz"] not in VOCES[datos["genero"]]:
+                datos["voz"] = VOCES[datos["genero"]][0]
+            if datos["foto"] not in FOTOS_PERSONALIZADOS[datos["genero"]]:
+                datos["foto"] = ""
             return datos
         if self.escenario in ESCENARIOS:
             return ESCENARIOS[self.escenario]
@@ -149,9 +156,10 @@ def inicio():
 @app.get("/api/config")
 def configuracion():
     """Escenarios, niveles y límites para armar la pantalla de inicio."""
-    campos = ("titulo", "descripcion", "personaje", "papel", "color", "objetivos")
+    campos = ("titulo", "descripcion", "personaje", "papel", "color", "objetivos", "genero", "foto")
     return {
         "escenarios": {k: {c: v[c] for c in campos} for k, v in ESCENARIOS.items()},
+        "url_fotos": url_foto("{foto}", 160),
         "niveles": {k: {c: v[c] for c in ("titulo", "descripcion")} for k, v in NIVELES.items()},
         "max_minutos": MAX_MINUTOS_SESION,
         "modelo_voz": MODELO_VOZ,
@@ -178,6 +186,8 @@ def escenario_personalizado(pedido: PedidoEscenario, request: Request):
     datos["descripcion"], datos["rol"] = datos["descripcion"][:240], datos["rol"][:1500]
     datos["objetivos"] = [o[:120] for o in datos["objetivos"][:4]]
     datos["color"] = random.choice(COLORES_PERSONALIZADOS)
+    datos["voz"] = random.choice(VOCES[datos["genero"]])
+    datos["foto"] = random.choice(FOTOS_PERSONALIZADOS[datos["genero"]])
     return EscenarioPersonalizado(**datos)
 
 
@@ -199,7 +209,7 @@ def crear_sesion(pedido: ConEscenario, request: Request):
                 "turn_detection": {"type": "semantic_vad", "eagerness": RAPIDEZ_RESPUESTA},
                 "noise_reduction": {"type": "near_field"},
             },
-            "output": {"voice": VOZ, "speed": NIVELES[pedido.nivel]["velocidad"]},
+            "output": {"voice": escenario["voz"], "speed": NIVELES[pedido.nivel]["velocidad"]},
         },
     }
     try:

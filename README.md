@@ -2,7 +2,7 @@
 
 Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA que hace un papel (entrevistador, mesero, recepcionista). Al terminar recibes una **evaluación en español**: nota, errores con su corrección, frases más naturales, vocabulario útil y consejos.
 
-- 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma, con la transcripción siempre visible al lado
+- 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma, cada uno con su foto y su propia voz (Mike con voz masculina), y la transcripción siempre visible al lado
 - 🔮 Orbe animado que reacciona al volumen real de tu voz y la del tutor, con un anillo que marca el tiempo de la sesión
 - 💬 Subtítulos grandes de lo que dice el tutor
 - 💡 Botón **"Dame una pista"**: traduce al español lo que te dijo el tutor y te sugiere 2 respuestas
@@ -82,7 +82,6 @@ uvicorn main:app --reload
 | `MODELO_VOZ` | Modelo de voz en tiempo real | `gpt-realtime-2.1-mini` |
 | `MODELO_TRANSCRIPCION` | Modelo para transcribir tu voz | `gpt-transcribe` |
 | `MODELO_EVALUACION` | Modelo que hace la evaluación final | `gpt-6-luna` |
-| `VOZ` | Voz del tutor (`marin`, `cedar`, `alloy`, `coral`…) | `marin` |
 
 ## 💸 ¿Cuánto cuesta?
 
@@ -127,6 +126,8 @@ docs/              # Capturas para este README
 **Cambiar los colores o la tipografía:** todo está en las variables de `:root` al inicio de `static/styles.css`. El color de cada personaje está en `escenarios.py` (campo `color`).
 
 **Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, la descripción, los `objetivos` (misiones en español) y el `rol` (en inglés), y reinicia el servidor.
+
+**Fotos y voces de los personajes:** cada escenario en `escenarios.py` tiene `genero`, `voz` y `foto`. Las voces femeninas son `marin` y `coral`; las masculinas, `cedar` y `ash`. Los personajes que crea el estudiante reciben una voz y una foto según su género. Las fotos son retratos de [Unsplash](https://unsplash.com) con licencia gratuita: para cambiar una, abre la foto en Unsplash, copia el identificador `photo-...` de su enlace de imagen y pégalo en `foto`. Si una foto no carga, se muestra la inicial del personaje.
 
 ## ⚠️ Limitaciones del prototipo
 
