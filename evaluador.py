@@ -4,6 +4,8 @@ escenarios personalizados y revisión de misiones.
 Las funciones reciben `escenario` como diccionario (uno de ESCENARIOS o uno personalizado).
 """
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from escenarios import NIVELES
@@ -107,6 +109,7 @@ def dar_pista(cliente, modelo: str, escenario: dict, nivel: str, turnos: list[di
 # -----------------------------
 class EscenarioGenerado(BaseModel):
     personaje: str = Field(description="Nombre de pila en inglés del personaje (una palabra)")
+    genero: Literal["femenino", "masculino"] = Field(description="Género del personaje, acorde con su nombre")
     papel: str = Field(description="Rol del personaje en español, corto. Ej: 'Vendedora de la tienda'")
     titulo: str = Field(description="Título corto del escenario en español. Ej: 'Devolver un producto'")
     descripcion: str = Field(description="Una frase en español: qué hará el estudiante")
