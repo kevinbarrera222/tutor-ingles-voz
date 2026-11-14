@@ -6,7 +6,7 @@
   <title>Tutor de inglés por voz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -29,6 +29,13 @@
       <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/></symbol>
       <symbol id="i-cards" viewBox="0 0 24 24"><rect x="3.5" y="6.5" width="13" height="14" rx="2"/><path d="M7.5 3.5h11a2 2 0 0 1 2 2v12"/></symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21.5c-3.9 0-6.5-2.6-6.5-6.2 0-3.4 2.3-5.4 3.6-7.6.5 1.6 1.4 2.6 2.4 3.1C11.6 7 13 4.3 15.3 2.5c-.3 2.9.8 5 2 6.8 1 1.5 1.2 3 1.2 4.4 0 4.6-2.9 7.8-6.5 7.8z"/></symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 2.5 5 13.5h6.5l-1 8 8.5-11h-6.5z"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.2l2.7 5.5 6 .9-4.4 4.2 1 6-5.3-2.8-5.3 2.8 1-6-4.4-4.2 6-.9z"/></symbol>
+      <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="15" r="6"/><path d="M8.5 10.2 5.5 2.5h4l2.5 5M15.5 10.2l3-7.7h-4L12 7.5M12 12.5v5"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3.2-6 6.5-6s6 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2 .8 3.3 2.9 3.5 5.6"/></symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol>
+      <symbol id="i-volume-off" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5l4.5 4v-13l-4.5 4H4zM16 9.5l5 5M21 9.5l-5 5"/></symbol>
       <symbol id="i-translate" viewBox="0 0 24 24"><path d="M4 5.5h9M8.5 3.5v2M6 5.5c.7 3 2.6 5.4 5.5 6.8M11 5.5c-.8 3.6-3.3 6.4-7 7.8M13 20.5l4-9 4 9M14.3 17.5h5.4"/></symbol>
     </defs>
   </svg>
@@ -41,6 +48,11 @@
       </svg>
       <span>Tutor de inglés</span>
     </a>
+    <div class="marcadores-juego">
+      <span class="chip-juego racha" id="chip-racha" title="Días seguidos practicando"><svg class="ico"><use href="#i-flame"/></svg><span id="valor-racha">0</span><span class="solo-lector"> días seguidos</span></span>
+      <span class="chip-juego xp" id="chip-xp" title="Tus puntos de experiencia"><svg class="ico"><use href="#i-bolt"/></svg><span id="valor-xp">0</span><span class="solo-lector"> puntos</span></span>
+      <button class="chip-juego boton-sonido" id="btn-sonido" aria-pressed="true" aria-label="Sonidos de celebración"><svg class="ico"><use href="#i-volume"/></svg></button>
+    </div>
     <nav class="navegacion" aria-label="Secciones">
       <button class="enlace-nav" data-ir="inicio" aria-current="page">Practicar</button>
       <button class="enlace-nav" data-ir="progreso">Mi progreso</button>
@@ -54,7 +66,8 @@
       <div class="hero">
         <h1>Practica inglés hablando, como en una llamada real.</h1>
         <p class="sub">Eliges con quién hablar y conversas en voz alta. Al colgar recibes una evaluación con tus errores corregidos, frases más naturales y vocabulario nuevo.</p>
-        <ul class="ventajas">
+        <div id="tarjeta-nivel" class="tarjeta-nivel"></div>
+        <ul class="ventajas" id="ventajas">
           <li><svg class="ico"><use href="#i-mic"/></svg>Tu tutor te escucha y te responde en tiempo real.</li>
           <li><svg class="ico"><use href="#i-bulb"/></svg>Si te quedas sin palabras, pide una pista en español.</li>
           <li><svg class="ico"><use href="#i-check"/></svg>Al terminar, ves qué mejorar y cómo decirlo mejor.</li>
@@ -144,7 +157,7 @@
         <aside class="lateral" aria-label="Apoyo durante la llamada">
           <div id="panel-pista" class="panel-pista oculto"></div>
           <div id="panel-misiones" class="panel-misiones">
-            <h2 class="titulo-panel"><svg class="ico"><use href="#i-flag"/></svg>Misiones <span class="cuenta-misiones" id="cuenta-misiones"></span></h2>
+            <h2 class="titulo-panel"><svg class="ico"><use href="#i-flag"/></svg>Misiones <span class="premio-mision">+10 XP cada una</span><span class="cuenta-misiones" id="cuenta-misiones"></span></h2>
             <ul id="lista-misiones" class="lista-misiones"></ul>
           </div>
           <div class="panel-transcripcion">
@@ -190,6 +203,7 @@
     </section>
   </main>
 
+  <div id="aviso-xp" class="aviso-xp" role="status" aria-live="polite"></div>
   <audio id="audio-tutor" autoplay></audio>
   <script src="/static/app.js"></script>
 </body>

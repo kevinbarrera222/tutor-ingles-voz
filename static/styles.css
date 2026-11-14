@@ -1,5 +1,5 @@
 /* Tutor de inglés por voz — estilos.
-   Tema claro y profesional: blanco, verde para las acciones y azul para tu voz.
+   Tema claro y divertido: blanco, verde para las acciones, azul para tu voz y ámbar para los premios.
    Para cambiar colores o tipografía, edita solo las variables de :root. */
 :root {
   --papel: #FFFFFF;
@@ -24,9 +24,13 @@
   --ambar-vivo: #F59E0B;
   --ambar-tinte: #FFF8EB;
 
-  --fuente: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
-  --radio-control: 10px;
-  --radio-panel: 14px;
+  --morado: #7C3AED;
+  --morado-tinte: #F3EEFE;
+  --verde-sombra: #0E5C2C;  /* borde inferior de los botones verdes (efecto 3D) */
+
+  --fuente: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --radio-control: 14px;
+  --radio-panel: 20px;
 }
 
 * { box-sizing: border-box; }
@@ -463,4 +467,149 @@ h1 { font-size: clamp(2rem, 4.2vw, 2.9rem); line-height: 1.08; font-weight: 600;
   .fila-personalizado { flex-wrap: wrap; }
   .grafico { padding: 14px 12px 8px; }
   .botones-repaso .boton { flex: 1; }
+}
+
+
+/* ==========================================================================
+   Modo juego: botones 3D, tarjetas, XP, niveles, medallas y confeti
+   ========================================================================== */
+.solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+h1 { font-weight: 800; letter-spacing: -0.02em; }
+.marcador h2, .titulo-bloque, .titulo-panel { font-weight: 800; }
+
+/* Botones que se "hunden" al presionarlos */
+.boton { font-weight: 800; border-width: 2px; border-bottom-width: 4px; transition: background .15s, transform .08s, border-bottom-width .08s; }
+.boton.principal { border-color: var(--verde-sombra); }
+.boton.principal:disabled { border-color: var(--linea-fuerte); }
+.boton.secundario { border-color: var(--linea-fuerte); }
+.boton:active:not(:disabled), .mini:active, .contacto:active, .segmento:active { transform: translateY(2px); border-bottom-width: 2px; }
+.boton.ancho { padding: 16px 20px; font-size: 1.08rem; }
+.mini { border-width: 2px; border-bottom-width: 3px; font-weight: 700; }
+.mini.solo-icono { width: 38px; min-height: 38px; }
+.mini.solo-icono:active { border-bottom-width: 2px; }
+
+/* Personajes como tarjetas separadas */
+.contactos { display: grid; gap: 10px; border: none; border-radius: 0; overflow: visible; }
+.contacto { border: 2px solid var(--linea); border-bottom-width: 4px; border-radius: var(--radio-panel); padding: 14px 16px; transition: background .15s, border-color .15s, transform .08s; }
+.contacto:first-child { border-top: 2px solid var(--linea); }
+.contacto:hover { border-color: var(--linea-fuerte); background: var(--papel); }
+.contacto[aria-checked="true"] { border-color: var(--verde-vivo); background: var(--verde-tinte); }
+.contacto .nombre-contacto { font-weight: 800; }
+.contacto .escenario b { font-weight: 700; }
+.avatar-contacto { width: 52px; height: 52px; box-shadow: 0 0 0 3px var(--papel), 0 0 0 5px var(--linea); }
+.contacto[aria-checked="true"] .avatar-contacto { box-shadow: 0 0 0 3px var(--verde-tinte), 0 0 0 5px var(--verde-vivo); }
+.avatar-nuevo { box-shadow: none; }
+.contacto[aria-checked="true"] .avatar-nuevo { box-shadow: none; }
+.seleccion { width: 26px; height: 26px; border-width: 2px; }
+
+.segmentado { border-width: 2px; padding: 5px; border-radius: var(--radio-control); }
+.segmento { font-weight: 700; border-radius: 10px; border-width: 2px; }
+.segmento[aria-checked="true"] { border-color: var(--azul); color: var(--azul); background: var(--azul-tinte); border-bottom-width: 4px; box-shadow: none; font-weight: 800; }
+
+.enlace-nav { font-weight: 700; border-radius: 12px; }
+
+/* Racha y XP en la barra superior */
+.barra { gap: 12px; }
+.marcadores-juego { display: flex; gap: 8px; align-items: center; margin-left: auto; margin-right: 8px; }
+.chip-juego {
+  display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px; border-radius: 99px;
+  font-weight: 800; font-size: .95rem; font-variant-numeric: tabular-nums; border: 2px solid transparent;
+}
+.chip-juego .ico { width: 18px; height: 18px; stroke-width: 2.2; }
+.chip-juego.racha { background: var(--ambar-tinte); color: var(--ambar); }
+.chip-juego.racha .ico { fill: var(--ambar-vivo); stroke: var(--ambar); }
+.chip-juego.xp { background: var(--azul-tinte); color: #1D4ED8; }
+.chip-juego.xp .ico { fill: #60A5FA; stroke: #1D4ED8; }
+.boton-sonido { width: 36px; padding: 0; justify-content: center; background: none; border-color: var(--linea); color: var(--tinta-2); cursor: pointer; }
+.boton-sonido:hover { background: var(--panel); color: var(--tinta); }
+.en-llamada .boton-sonido { display: none; }
+
+/* Tarjeta de nivel */
+.tarjeta-nivel { margin-top: 28px; padding: 18px 20px; border: 2px solid var(--linea); border-bottom-width: 4px; border-radius: var(--radio-panel); background: var(--papel); max-width: 460px; }
+.tarjeta-nivel.ancha { max-width: none; margin-top: 24px; }
+.cabeza-nivel { display: flex; gap: 14px; align-items: center; }
+.insignia-nivel {
+  flex: none; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; transform: rotate(-6deg);
+  background: var(--ambar-vivo); color: #fff; font-weight: 800; font-size: 1.5rem; border-bottom: 4px solid var(--ambar);
+}
+.nombre-nivel { font-weight: 800; font-size: 1.15rem; line-height: 1.2; }
+.tarjeta-nivel .detalle, .falta-nivel { color: var(--tinta-2); font-size: .9rem; }
+.barra-nivel { height: 16px; margin-top: 14px; border-radius: 99px; background: var(--panel); border: 2px solid var(--linea); overflow: hidden; }
+.barra-nivel span {
+  display: block; height: 100%; min-width: 12px; border-radius: 99px; background: var(--verde-vivo);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .12), inset 0 3px 0 rgba(255, 255, 255, .35);
+  transition: width 1.2s cubic-bezier(.2, .8, .2, 1);
+}
+.falta-nivel { margin-top: 6px; }
+.datos-nivel { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 2px dashed var(--linea); font-size: .95rem; }
+.datos-nivel span { display: inline-flex; align-items: center; gap: 6px; }
+.datos-nivel .ico { width: 18px; height: 18px; color: var(--ambar); }
+.datos-nivel b { font-weight: 800; }
+
+/* Misiones: premio visible */
+.premio-mision { font-size: .75rem; font-weight: 800; color: #1D4ED8; background: var(--azul-tinte); padding: 2px 8px; border-radius: 99px; }
+.mision.cumplida .marca-mision { background: var(--verde-vivo); border-color: var(--verde-vivo); }
+.marca-mision { width: 24px; height: 24px; border-width: 2px; }
+
+/* Aviso flotante "+10 XP" */
+.aviso-xp {
+  position: fixed; left: 50%; top: 14px; z-index: 50; display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 10px 18px; border-radius: 99px; background: var(--tinta); color: #fff; font-size: .95rem;
+  box-shadow: 0 6px 20px rgba(23, 33, 47, .2);
+  transform: translate(-50%, -160%); opacity: 0; pointer-events: none; transition: transform .35s cubic-bezier(.2, 1.4, .4, 1), opacity .2s;
+}
+.aviso-xp.visible { transform: translate(-50%, 0); opacity: 1; }
+.aviso-xp .ico { width: 20px; height: 20px; fill: #FBBF24; stroke: #FBBF24; }
+.aviso-xp b { font-weight: 800; color: #FDE68A; }
+.aviso-xp span { color: #E2E8F0; }
+
+.confeti { position: fixed; z-index: 60; width: 8px; height: 12px; border-radius: 2px; pointer-events: none; }
+
+/* Premio al final de la llamada */
+.premio { margin-top: 28px; padding: 20px 22px; border: 2px solid #FCD34D; border-bottom-width: 4px; border-radius: var(--radio-panel); background: var(--ambar-tinte); }
+.cabeza-premio { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.xp-grande { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 2rem; color: var(--ambar); letter-spacing: -0.02em; }
+.xp-grande .ico { width: 30px; height: 30px; fill: var(--ambar-vivo); stroke: var(--ambar); }
+.desglose { display: flex; gap: 6px; flex-wrap: wrap; }
+.desglose span { font-size: .85rem; padding: 3px 10px; border-radius: 99px; background: var(--papel); border: 1px solid #FCD34D; color: var(--tinta-2); }
+.desglose b { color: var(--ambar); font-weight: 800; }
+.subiste { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-weight: 800; font-size: 1.1rem; color: var(--verde-texto); }
+.subiste .ico { fill: var(--ambar-vivo); stroke: var(--ambar); }
+.nivel-actual { margin-top: 12px; font-weight: 800; }
+.premio .barra-nivel { background: var(--papel); border-color: #FCD34D; }
+.premio .falta-nivel { color: var(--ambar); }
+.medallas-nuevas { display: grid; gap: 8px; margin-top: 14px; }
+
+/* Medallas */
+.vitrina { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.medalla { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: var(--radio-control); border: 2px solid var(--linea); background: var(--papel); }
+.medalla b { display: block; font-weight: 800; line-height: 1.25; }
+.medalla span:not(.disco) { font-size: .85rem; color: var(--tinta-2); }
+.disco { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; border-bottom: 3px solid rgba(0, 0, 0, .2); }
+.disco .ico { width: 22px; height: 22px; stroke-width: 2.2; }
+.medalla.ganada { border-bottom-width: 4px; }
+.color-verde .disco { background: var(--verde-vivo); }
+.color-azul .disco { background: #3B82F6; }
+.color-ambar .disco { background: var(--ambar-vivo); }
+.color-rojo .disco { background: #F43F5E; }
+.color-morado .disco { background: #A855F7; }
+.medalla.bloqueada { background: var(--panel); border-style: dashed; }
+.medalla.bloqueada .disco { background: var(--linea); color: var(--tinta-2); border-bottom-color: var(--linea-fuerte); }
+.medalla.bloqueada b { color: var(--tinta-2); }
+
+.estadisticas, .grafico, .historial, .lista-correcciones, .lista-vocab, .consejos, .panel-misiones, .panel-transcripcion { border-width: 2px; }
+.estadisticas dd { font-weight: 800; }
+.pestana[aria-selected="true"] { border-bottom-width: 3px; font-weight: 800; }
+.circulo-nota .numero { font-weight: 800; }
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-nivel span, .aviso-xp { transition: none; }
+}
+@media (max-width: 640px) {
+  .marcadores-juego { margin-right: 0; }
+  .chip-juego { height: 32px; padding: 0 10px; font-size: .9rem; }
+  .boton-sonido { width: 32px; }
+  .tarjeta-nivel { margin-top: 20px; }
+  .xp-grande { font-size: 1.7rem; }
+  .avatar-contacto { width: 46px; height: 46px; }
 }

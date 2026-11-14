@@ -11,9 +11,10 @@ Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA q
 - 🚩 **Misiones**: cada llamada tiene 4 objetivos que se marcan solos mientras hablas
 - 🔁 **Practica tus correcciones**: escucha la frase correcta y repítela con tu voz; la app te dice qué palabras fallaste
 - 📈 **Mi progreso**: historial de llamadas, gráfico de tu nota, días seguidos y tus correcciones recientes para practicarlas otra vez
+- 🎮 **Modo juego**: ganas puntos (XP) por cada llamada, misión, frase bien dicha y palabra repasada; subes de nivel (de Principiante a Bilingüe), mantienes tu racha de días y desbloqueas 10 medallas, con confeti y sonidos al cumplir misiones (los sonidos se pueden apagar)
 - 🗂️ **Mi vocabulario**: las palabras de cada evaluación se guardan y se repasan con tarjetas (repetición espaciada)
 - ✅ Evaluación final: nota animada, estadísticas de la llamada y pestañas con correcciones, frases más naturales, vocabulario (tarjetas que se voltean) y consejos
-- 🎨 Diseño claro y profesional (blanco, verde y azul, tipografía Instrument Sans), adaptado a celular
+- 🎨 Diseño claro y divertido (blanco, verde, azul y ámbar para los premios, tipografía Nunito), con botones que se hunden al presionarlos y adaptado a celular
 - 💸 Control de costos: duración máxima por sesión, límite de sesiones por día y costo estimado en vivo
 - 🔐 Tu API Key nunca llega al navegador: el servidor crea una clave temporal para cada sesión
 
@@ -107,7 +108,7 @@ Navegador ──(4) grabación al repetir una frase──▶ Servidor ──▶ 
 | `POST /api/evaluar` | Evaluación final de la llamada |
 | `POST /api/verificar-frase` | Transcribe tu grabación y la compara con la frase correcta |
 
-El historial y el vocabulario se guardan en el navegador (`localStorage`): no hay base de datos.
+El historial, el vocabulario y los puntos, niveles y medallas se guardan en el navegador (`localStorage`): no hay base de datos.
 
 ## 📁 Estructura
 
