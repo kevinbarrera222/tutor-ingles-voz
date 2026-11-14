@@ -452,7 +452,13 @@ function revisarMisiones() {
       nuevas.forEach((i) => { misiones[i] = true; });
       if (nuevas.length) {
         pintarMisiones();
-        nuevas.forEach((i) => $(`mision-${i}`)?.classList.add("recien"));
+        nuevas.forEach((i) => {
+          const item = $(`mision-${i}`);
+          item?.classList.add("recien");
+          confeti(item?.querySelector(".marca-mision"));
+        });
+        sonar("mision");
+        sumarXP(nuevas.length * XP.mision, nuevas.length === 1 ? "Misión cumplida" : `${nuevas.length} misiones cumplidas`);
       }
     })
     .catch((e) => console.warn("No se pudieron revisar las misiones:", e.message))
@@ -526,8 +532,10 @@ async function terminar() {
     const espera = new Promise((r) => setTimeout(r, 6000));
     await Promise.race([Promise.resolve(estado.revisando).then(() => revisarMisiones()), espera]);
     const evaluacion = await enviar("/api/evaluar", { ...cuerpoEscenario(), turnos: turnosParaEnviar(200) });
-    mostrarEvaluacion(evaluacion, segundos);
     guardarPractica(evaluacion, segundos);
+    const premio = registrarLlamadaEnJuego(evaluacion);
+    mostrarEvaluacion(evaluacion, segundos, premio);
+    celebrarPremio(premio);
   } catch (e) {
     mostrarError("error-evaluacion", e.message);
   } finally {
@@ -750,6 +758,15 @@ async function verificarFrase(frase, blob) {
 }
 
 function pintarResultadoFrase(caja, datos) {
+  const bloque = caja.closest(".practicar");
+  if (datos.correcto && bloque && !bloque.dataset.premiada) {
+    bloque.dataset.premiada = "1";
+    sonar("frase");
+    confeti(bloque.querySelector('[data-accion="repetir"]'), 16);
+    sumarXP(XP.frase, "Frase bien dicha");
+    const medalla = ganarMedalla("buena-pronunciacion");
+    if (medalla) setTimeout(() => mostrarAvisoXP("Medalla nueva", medalla.nombre), 2300);
+  }
   const palabras = datos.palabras.map((p) => `<span class="${p.ok ? "" : "falta"}">${escapar(p.palabra)}</span>`).join(" ");
   const escuchado = datos.transcripcion ? `Escuchamos: «${escapar(datos.transcripcion)}»` : "No escuchamos ninguna palabra";
   caja.innerHTML = datos.correcto
@@ -760,7 +777,7 @@ function pintarResultadoFrase(caja, datos) {
 }
 
 // ---------- Evaluación ----------
-function mostrarEvaluacion(ev, segundos) {
+function mostrarEvaluacion(ev, segundos, premio = null) {
   const titulo = ev.nota >= 9 ? "Excelente trabajo." : ev.nota >= 7 ? "Muy bien." : ev.nota >= 5 ? "Vas por buen camino." : "Sigue practicando.";
   const respuestas = estado.turnos.filter((t) => t.rol === "usuario" && t.texto).length;
   const errores = ev.errores || [], frases = ev.mejores_frases || [], vocab = ev.vocabulario || [];
@@ -780,6 +797,8 @@ function mostrarEvaluacion(ev, segundos) {
         <p class="resumen">${escapar(ev.resumen)}</p>
       </div>
     </div>
+
+    ${premio ? bloqueJuego(premio) : ""}
 
     <dl class="estadisticas">
       <div><dt>Duración</dt><dd>${formatoTiempo(segundos)}</dd></div>
@@ -912,6 +931,254 @@ function guardarPractica(ev, segundos) {
   almacen.guardar("tutor.vocabulario", vocabulario);
 }
 
+
+// ---------- Juego: puntos (XP), niveles, racha y medallas ----------
+// Todo se guarda en este navegador, igual que el historial.
+const XP = { llamada: 20, mision: 10, porPuntoDeNota: 3, frase: 5, palabra: 2 };
+const NIVELES_JUEGO = [
+  [0, "Principiante"], [100, "Explorador"], [250, "Viajero"], [450, "Conversador"],
+  [700, "Seguro"], [1000, "Fluido"], [1400, "Bilingüe"],
+];
+const MEDALLAS = [
+  { id: "primera-llamada", nombre: "Primera llamada", como: "Termina tu primera llamada", icono: "phone", color: "verde" },
+  { id: "mision-cumplida", nombre: "Misión cumplida", como: "Cumple todas las misiones de una llamada", icono: "flag", color: "azul" },
+  { id: "sobresaliente", nombre: "Sobresaliente", como: "Saca 9 o más en una llamada", icono: "star", color: "ambar" },
+  { id: "en-racha", nombre: "En racha", como: "Practica 3 días seguidos", icono: "flame", color: "ambar" },
+  { id: "imparable", nombre: "Imparable", como: "Practica 7 días seguidos", icono: "flame", color: "rojo" },
+  { id: "conversador", nombre: "Conversador", como: "Completa 10 llamadas", icono: "chat", color: "azul" },
+  { id: "buena-pronunciacion", nombre: "Buena pronunciación", como: "Repite bien una frase corregida", icono: "mic", color: "verde" },
+  { id: "sociable", nombre: "Sociable", como: "Habla con Sarah, Mike y Emma", icono: "users", color: "morado" },
+  { id: "creativo", nombre: "Creativo", como: "Practica una situación creada por ti", icono: "sparkle", color: "morado" },
+  { id: "coleccionista", nombre: "Coleccionista", como: "Guarda 20 palabras en tu vocabulario", icono: "cards", color: "verde" },
+];
+
+function leerJuego() {
+  let juego = almacen.leer("tutor.juego", null);
+  if (!juego) {
+    // Si ya tenías llamadas de antes, te damos los puntos que habrías ganado
+    const historial = almacen.leer("tutor.historial", []);
+    juego = { xp: 0, medallas: {} };
+    for (const h of historial) juego.xp += XP.llamada + (h.misiones?.[0] || 0) * XP.mision + Math.round(h.nota) * XP.porPuntoDeNota;
+    almacen.guardar("tutor.juego", juego);
+  }
+  return juego;
+}
+
+function nivelDe(xp) {
+  let n = 0;
+  while (n + 1 < NIVELES_JUEGO.length && xp >= NIVELES_JUEGO[n + 1][0]) n++;
+  // Después de Bilingüe, un nivel nuevo cada 500 XP
+  const extra = n === NIVELES_JUEGO.length - 1 ? Math.floor((xp - NIVELES_JUEGO[n][0]) / 500) : 0;
+  const numero = n + 1 + extra;
+  const desde = NIVELES_JUEGO[n][0] + extra * 500;
+  const hasta = n + 1 < NIVELES_JUEGO.length ? NIVELES_JUEGO[n + 1][0] : desde + 500;
+  const siguiente = n + 1 < NIVELES_JUEGO.length ? NIVELES_JUEGO[n + 1][1] : "Bilingüe";
+  return { numero, nombre: NIVELES_JUEGO[n][1], desde, hasta, siguiente, avance: (xp - desde) / (hasta - desde) };
+}
+
+// Suma XP y devuelve si subiste de nivel
+function sumarXP(cantidad, motivo) {
+  const juego = leerJuego();
+  const antes = nivelDe(juego.xp).numero;
+  juego.xp += cantidad;
+  almacen.guardar("tutor.juego", juego);
+  const subio = nivelDe(juego.xp).numero > antes;
+  pintarMarcadores();
+  if (motivo) mostrarAvisoXP(`+${cantidad} XP`, motivo);
+  return subio;
+}
+
+function ganarMedalla(id) {
+  const juego = leerJuego();
+  if (juego.medallas[id]) return null;
+  juego.medallas[id] = new Date().toISOString();
+  almacen.guardar("tutor.juego", juego);
+  return MEDALLAS.find((m) => m.id === id);
+}
+
+function pintarMarcadores() {
+  const juego = leerJuego();
+  $("valor-xp").textContent = juego.xp;
+  $("valor-racha").textContent = rachaDeDias(almacen.leer("tutor.historial", []));
+  pintarTarjetaNivel();
+}
+
+function barraNivel(xp, id = "") {
+  const n = nivelDe(xp);
+  return `
+    <div class="barra-nivel" ${id ? `id="${id}"` : ""} role="progressbar" aria-valuemin="${n.desde}" aria-valuemax="${n.hasta}" aria-valuenow="${xp}"
+      aria-label="Avance al nivel ${n.numero + 1}">
+      <span style="width:${Math.round(Math.min(1, n.avance) * 100)}%"></span>
+    </div>
+    <p class="falta-nivel">${n.hasta - xp} XP para el nivel ${n.numero + 1}${n.siguiente !== n.nombre ? `: ${n.siguiente}` : ""}</p>`;
+}
+
+function pintarTarjetaNivel() {
+  const caja = $("tarjeta-nivel");
+  if (!caja) return;
+  const juego = leerJuego();
+  const n = nivelDe(juego.xp);
+  const historial = almacen.leer("tutor.historial", []);
+  const medallas = Object.keys(juego.medallas).length;
+  $("ventajas").classList.toggle("oculto", historial.length > 0);
+  caja.innerHTML = `
+    <div class="cabeza-nivel">
+      <span class="insignia-nivel" aria-hidden="true">${n.numero}</span>
+      <div>
+        <div class="nombre-nivel">Nivel ${n.numero}: ${n.nombre}</div>
+        <div class="detalle">${juego.xp} XP en total</div>
+      </div>
+    </div>
+    ${barraNivel(juego.xp)}
+    <div class="datos-nivel">
+      <span>${icono("flame")}<b>${rachaDeDias(historial)}</b> ${rachaDeDias(historial) === 1 ? "día seguido" : "días seguidos"}</span>
+      <span>${icono("medal")}<b>${medallas}</b> de ${MEDALLAS.length} medallas</span>
+    </div>`;
+}
+
+// Mensaje flotante "+10 XP"
+let temporizadorAviso = null;
+function mostrarAvisoXP(titulo, detalle) {
+  const aviso = $("aviso-xp");
+  aviso.innerHTML = `${icono("bolt")}<b>${escapar(titulo)}</b><span>${escapar(detalle)}</span>`;
+  aviso.classList.remove("visible");
+  void aviso.offsetWidth; // reinicia la animación
+  aviso.classList.add("visible");
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(() => aviso.classList.remove("visible"), 2200);
+}
+
+// Confeti hecho con elementos simples (sin librerías)
+function confeti(origen, cantidad = 26) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const r = origen?.getBoundingClientRect?.() || { left: innerWidth / 2, top: innerHeight / 3, width: 0, height: 0 };
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const colores = ["#22C55E", "#2563EB", "#F59E0B", "#38BDF8", "#A855F7", "#F43F5E"];
+  for (let i = 0; i < cantidad; i++) {
+    const p = document.createElement("span");
+    p.className = "confeti";
+    p.style.left = `${x}px`; p.style.top = `${y}px`;
+    p.style.background = colores[i % colores.length];
+    document.body.appendChild(p);
+    const ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 120;
+    p.animate([
+      { transform: "translate(-50%, -50%) rotate(0deg)", opacity: 1 },
+      { transform: `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist - 40}px) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.7 },
+      { transform: `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist + 60}px) rotate(${Math.random() * 720}deg)`, opacity: 0 },
+    ], { duration: 900 + Math.random() * 500, easing: "cubic-bezier(.2,.8,.3,1)" }).onfinish = () => p.remove();
+  }
+}
+
+// Sonidos cortos generados en el navegador (sin archivos)
+let contextoSonido = null;
+const sonidosActivos = () => almacen.leer("tutor.sonidos", true);
+function sonar(tipo) {
+  if (!sonidosActivos()) return;
+  try {
+    contextoSonido = contextoSonido || new AudioContext();
+    const notas = { mision: [784, 1047], nivel: [523, 659, 784, 1047], frase: [659, 880] }[tipo] || [880];
+    notas.forEach((f, i) => {
+      const t = contextoSonido.currentTime + i * 0.11;
+      const osc = contextoSonido.createOscillator(), gan = contextoSonido.createGain();
+      osc.type = "triangle"; osc.frequency.value = f;
+      gan.gain.setValueAtTime(0.0001, t);
+      gan.gain.exponentialRampToValueAtTime(0.12, t + 0.02);
+      gan.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+      osc.connect(gan).connect(contextoSonido.destination);
+      osc.start(t); osc.stop(t + 0.3);
+    });
+  } catch {}
+}
+function pintarBotonSonido() {
+  const activo = sonidosActivos();
+  $("btn-sonido").setAttribute("aria-pressed", String(activo));
+  $("btn-sonido").innerHTML = icono(activo ? "volume" : "volume-off");
+  $("btn-sonido").title = activo ? "Sonidos activados" : "Sonidos desactivados";
+}
+
+// Al terminar una llamada: XP de la llamada, medallas nuevas y subida de nivel
+function registrarLlamadaEnJuego(ev) {
+  const xpAntes = leerJuego().xp;
+  const hechas = estado.misiones.filter(Boolean).length;
+  const desglose = [
+    ["Llamada terminada", XP.llamada],
+    ["Tu nota", Math.round(ev.nota) * XP.porPuntoDeNota],
+  ];
+  const nuevas = desglose.reduce((s, [, v]) => s + v, 0);
+  sumarXP(nuevas);
+  if (hechas) desglose.splice(1, 0, [`${hechas} ${hechas === 1 ? "misión" : "misiones"}`, hechas * XP.mision]);
+  const total = desglose.reduce((s, [, v]) => s + v, 0);
+
+  const historial = almacen.leer("tutor.historial", []);
+  const medallas = [];
+  const dar = (id) => { const m = ganarMedalla(id); if (m) medallas.push(m); };
+  dar("primera-llamada");
+  if (estado.misiones.length && hechas === estado.misiones.length) dar("mision-cumplida");
+  if (ev.nota >= 9) dar("sobresaliente");
+  if (rachaDeDias(historial) >= 3) dar("en-racha");
+  if (rachaDeDias(historial) >= 7) dar("imparable");
+  if (historial.length >= 10) dar("conversador");
+  if (["entrevista", "restaurante", "hotel"].every((k) => historial.some((h) => h.escenario === k))) dar("sociable");
+  if (estado.escenario === "personalizado") dar("creativo");
+  if (almacen.leer("tutor.vocabulario", []).length >= 20) dar("coleccionista");
+
+  const xpAhora = leerJuego().xp;
+  // El XP de las misiones ya se sumó durante la llamada
+  const xpInicioLlamada = xpAntes - hechas * XP.mision;
+  pintarMarcadores();
+  return { total, desglose, xpInicioLlamada, xpAhora, medallas,
+    subio: nivelDe(xpAhora).numero > nivelDe(xpInicioLlamada).numero };
+}
+
+function bloqueJuego(r) {
+  const n = nivelDe(r.xpAhora);
+  return `
+    <section class="premio" aria-label="Puntos ganados">
+      <div class="cabeza-premio">
+        <span class="xp-grande">${icono("bolt")}+${r.total} XP</span>
+        <div class="desglose">${r.desglose.map(([t, v]) => `<span>${escapar(t)} <b>+${v}</b></span>`).join("")}</div>
+      </div>
+      ${r.subio ? `<p class="subiste">${icono("star")}<span>Subiste al nivel ${n.numero}: ${n.nombre}</span></p>` : `<p class="nivel-actual">Nivel ${n.numero}: ${n.nombre}</p>`}
+      ${barraNivel(r.xpAhora, "barra-premio")}
+      ${r.medallas.length ? `
+        <div class="medallas-nuevas">
+          ${r.medallas.map((m) => `
+            <div class="medalla ganada color-${m.color}">
+              <span class="disco">${icono(m.icono)}</span>
+              <div><b>Medalla nueva: ${escapar(m.nombre)}</b><span>${escapar(m.como)}</span></div>
+            </div>`).join("")}
+        </div>` : ""}
+    </section>`;
+}
+
+function celebrarPremio(r) {
+  const barra = document.querySelector("#barra-premio span");
+  if (barra) {
+    // La barra arranca donde estabas antes de la llamada y avanza
+    const final = barra.style.width;
+    const nAntes = nivelDe(r.xpInicioLlamada), nAhora = nivelDe(r.xpAhora);
+    barra.style.width = nAntes.numero === nAhora.numero ? `${Math.round(nAntes.avance * 100)}%` : "0%";
+    requestAnimationFrame(() => requestAnimationFrame(() => { barra.style.width = final; }));
+  }
+  if (r.subio || r.medallas.length) {
+    setTimeout(() => { confeti(document.querySelector(".premio"), 46); sonar(r.subio ? "nivel" : "mision"); }, 500);
+  }
+}
+
+function pintarMedallas() {
+  const juego = leerJuego();
+  return `
+    <h2 class="titulo-bloque">Medallas <span class="tenue">${Object.keys(juego.medallas).length} de ${MEDALLAS.length}</span></h2>
+    <div class="vitrina">${MEDALLAS.map((m) => {
+      const ganada = juego.medallas[m.id];
+      return `
+        <div class="medalla ${ganada ? "ganada" : "bloqueada"} color-${m.color}">
+          <span class="disco">${icono(ganada ? m.icono : "lock")}</span>
+          <div><b>${escapar(m.nombre)}</b><span>${escapar(m.como)}</span></div>
+        </div>`;
+    }).join("")}</div>`;
+}
+
 // ---------- Mi progreso ----------
 function rachaDeDias(historial) {
   const dias = new Set(historial.map((h) => diaLocal(h.fecha)));
@@ -996,7 +1263,16 @@ function pintarProgreso() {
     .filter((e) => !vistas.has(e.correccion) && vistas.add(e.correccion)).slice(0, 5);
   const fechaLarga = (iso) => new Date(iso).toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" });
 
+  const juego = leerJuego(), nivel = nivelDe(juego.xp);
   caja.innerHTML = `
+    <div class="tarjeta-nivel ancha">
+      <div class="cabeza-nivel">
+        <span class="insignia-nivel" aria-hidden="true">${nivel.numero}</span>
+        <div><div class="nombre-nivel">Nivel ${nivel.numero}: ${nivel.nombre}</div><div class="detalle">${juego.xp} XP en total</div></div>
+      </div>
+      ${barraNivel(juego.xp)}
+    </div>
+
     <dl class="estadisticas">
       <div><dt>Llamadas</dt><dd>${historial.length}</dd></div>
       <div><dt>Nota promedio</dt><dd>${promedio.toFixed(1)}</dd></div>
@@ -1005,6 +1281,8 @@ function pintarProgreso() {
     </dl>
 
     ${graficoNotas(historial)}
+
+    ${pintarMedallas()}
 
     ${recientes.length ? `
       <h2 class="titulo-bloque">Practica otra vez tus correcciones recientes</h2>
@@ -1139,6 +1417,7 @@ function iniciarRepaso(vocabulario, cola) {
         v.proximo = sumarDias(hoy(), DIAS_REPASO[v.caja]);
         delete v.fallo;
         sabidas++;
+        sumarXP(XP.palabra, "Palabra repasada");
       } else {
         v.caja = 1;
         v.proximo = hoy();
@@ -1172,5 +1451,12 @@ $("descripcion-personalizada").addEventListener("input", (e) => {
   $("btn-crear-personaje").disabled = e.target.value.trim().length < 5;
 });
 window.addEventListener("beforeunload", detenerTodo);
+$("btn-sonido").addEventListener("click", () => {
+  almacen.guardar("tutor.sonidos", !sonidosActivos());
+  pintarBotonSonido();
+  sonar("frase");
+});
+pintarBotonSonido();
+pintarMarcadores();
 
 cargarConfiguracion();
