@@ -38,7 +38,7 @@ MAX_AYUDAS_POR_DIA = int(os.getenv("MAX_AYUDAS_POR_DIA", "300"))
 # Qué tan rápido responde el tutor cuando dejas de hablar: high (rápido), medium o low (espera más)
 RAPIDEZ_RESPUESTA = os.getenv("RAPIDEZ_RESPUESTA", "high")
 
-COLORES_PERSONALIZADOS = ["#7C3AED", "#C2410C", "#BE185D", "#0369A1", "#4D7C0F"]
+COLORES_PERSONALIZADOS = ["#E8432F", "#0D9488", "#7C3AED", "#DB2777", "#C2410C"]
 CARPETA_STATIC = Path(__file__).parent / "static"
 
 app = FastAPI(title="Tutor de inglés por voz")

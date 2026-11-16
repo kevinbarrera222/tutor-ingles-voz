@@ -14,7 +14,7 @@ Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA q
 - 🎮 **Modo juego**: ganas puntos (XP) por cada llamada, misión, frase bien dicha y palabra repasada; subes de nivel (de Principiante a Bilingüe), mantienes tu racha de días y desbloqueas 10 medallas, con confeti y sonidos al cumplir misiones (los sonidos se pueden apagar)
 - 🗂️ **Mi vocabulario**: las palabras de cada evaluación se guardan y se repasan con tarjetas (repetición espaciada)
 - ✅ Evaluación final: nota animada, estadísticas de la llamada y pestañas con correcciones, frases más naturales, vocabulario (tarjetas que se voltean) y consejos
-- 🎨 Diseño claro y divertido (blanco, verde, azul y ámbar para los premios, tipografía Nunito), con botones que se hunden al presionarlos y adaptado a celular
+- 🌴 Diseño tropical y divertido: fondo durazno, coral para las acciones, turquesa para tu voz y tus logros, mango para los premios, olas y botones tipo píldora que se hunden al presionarlos (letra Nunito), adaptado a celular
 - 💸 Control de costos: duración máxima por sesión, límite de sesiones por día y costo estimado en vivo
 - 🔐 Tu API Key nunca llega al navegador: el servidor crea una clave temporal para cada sesión
 
@@ -124,7 +124,7 @@ docs/              # Capturas para este README
 .env.example       # Plantilla de configuración
 ```
 
-**Cambiar los colores o la tipografía:** todo está en las variables de `:root` al inicio de `static/styles.css`. El color de cada personaje está en `escenarios.py` (campo `color`).
+**Cambiar los colores o la tipografía:** todo está en las variables de `:root` al inicio de `static/styles.css` (`--coral`, `--turquesa`, `--mango-vivo`, `--fondo`…). El orbe de la llamada usa `COLORES_ORBE` en `static/app.js`. El color de cada personaje está en `escenarios.py` (campo `color`).
 
 **Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, la descripción, los `objetivos` (misiones en español) y el `rol` (en inglés), y reinicia el servidor.
 
