@@ -6,3 +6,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Secretos de Streamlit (en la nube se ponen en Settings > Secrets)
+.streamlit/secrets.toml

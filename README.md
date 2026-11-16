@@ -78,6 +78,7 @@ uvicorn main:app --reload
 | `OPENAI_API_KEY` | Tu clave de OpenAI | — |
 | `MAX_MINUTOS_SESION` | Duración máxima de cada conversación | `5` |
 | `MAX_SESIONES_POR_DIA` | Sesiones por día para cada visitante | `20` |
+| `MAX_SESIONES_TOTALES_POR_DIA` | Llamadas por día sumando a todos los visitantes | `50` |
 | `MAX_AYUDAS_POR_DIA` | Usos por día de cada ayuda (pistas, misiones, personajes, revisión de frases) para cada visitante | `300` |
 | `RAPIDEZ_RESPUESTA` | Qué tan rápido responde el tutor cuando dejas de hablar: `high`, `medium` o `low`. Si te interrumpe antes de terminar, usa `medium` | `high` |
 | `MODELO_VOZ` | Modelo de voz en tiempo real | `gpt-realtime-2.1-mini` |
@@ -129,6 +130,23 @@ docs/              # Capturas para este README
 **Agregar un escenario:** copia uno de los bloques de `ESCENARIOS` en `escenarios.py`, cambia el título, la descripción, los `objetivos` (misiones en español) y el `rol` (en inglés), y reinicia el servidor.
 
 **Fotos y voces de los personajes:** cada escenario en `escenarios.py` tiene `genero`, `voz` y `foto`. Las voces femeninas son `marin` y `coral`; las masculinas, `cedar` y `ash`. Los personajes que crea el estudiante reciben una voz y una foto según su género. Las fotos son retratos de [Unsplash](https://unsplash.com) con licencia gratuita: para cambiar una, abre la foto en Unsplash, copia el identificador `photo-...` de su enlace de imagen y pégalo en `foto`. Si una foto no carga, se muestra la inicial del personaje.
+
+## ☁️ Publicar en Streamlit Community Cloud
+
+La app se publica en la misma cuenta de Streamlit que los otros proyectos. `streamlit_app.py` crea una app de Streamlit (`st.App`) que muestra el tutor a pantalla completa y sirve el servidor del tutor (`main.py`) en la ruta `/tutor/`.
+
+1. En [share.streamlit.io](https://share.streamlit.io) toca **Create app** y elige el repositorio `tutor-ingles-voz`, la rama `main` y el archivo `streamlit_app.py`.
+2. En **Advanced settings** elige **Python 3.13** y en **Secrets** pega:
+   ```toml
+   OPENAI_API_KEY = "sk-..."
+   # Opcionales
+   MAX_SESIONES_TOTALES_POR_DIA = 50
+   ```
+3. Toca **Deploy** y espera unos minutos.
+
+Para probar lo mismo en tu PC: `streamlit run streamlit_app.py` (la forma de siempre, `uvicorn main:app --reload`, sigue funcionando).
+
+> 💡 Al publicarla, cualquiera con el enlace usa tu saldo de OpenAI. Además de los límites por visitante, `MAX_SESIONES_TOTALES_POR_DIA` (50 por defecto) limita las llamadas de todos juntos. También conviene poner un límite de gasto mensual en tu cuenta de OpenAI.
 
 ## ⚠️ Limitaciones del prototipo
 
