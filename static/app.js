@@ -1,4 +1,6 @@
 // Tutor de inglés por voz — lógica del navegador.
+// Las rutas son relativas ("api/...", "static/...") para que la app funcione igual en la raíz
+// (uvicorn en tu PC) o montada en /tutor/ (Streamlit Community Cloud).
 // Flujo de una llamada: pedir clave temporal al servidor → conectar con OpenAI por WebRTC →
 // transcripción en vivo y misiones → al colgar, evaluación y práctica de las correcciones.
 // El historial y el vocabulario se guardan en este navegador (localStorage).
@@ -125,7 +127,7 @@ function cambiarEstado(clase, texto) {
 // ---------- Pantalla de inicio ----------
 async function cargarConfiguracion() {
   try {
-    estado.config = await pedirJSON("/api/config");
+    estado.config = await pedirJSON("api/config");
   } catch (e) {
     mostrarError("error-inicio", `No se pudo cargar la configuración: ${e.message}`);
     return;
@@ -194,7 +196,7 @@ async function crearPersonaje() {
   rotulo.textContent = "Creando personaje…";
   ocultar("error-inicio");
   try {
-    estado.personalizado = await enviar("/api/escenario-personalizado", { descripcion, nivel: estado.nivel });
+    estado.personalizado = await enviar("api/escenario-personalizado", { descripcion, nivel: estado.nivel });
     pintarVistaPersonaje();
   } catch (e) {
     mostrarError("error-inicio", e.message);
@@ -252,7 +254,7 @@ async function empezar() {
         : `No se pudo acceder al micrófono: ${e.message}`);
     }
 
-    const sesion = await enviar("/api/sesion", cuerpoEscenario());
+    const sesion = await enviar("api/sesion", cuerpoEscenario());
 
     $("avatar").innerHTML = contenidoAvatar(esc);
     $("avatar").style.setProperty("--color-personaje", esc.color);
@@ -445,7 +447,7 @@ function revisarMisiones() {
   const pendientes = estado.misiones.map((hecha, i) => (hecha ? null : i)).filter((i) => i !== null);
   if (!pendientes.length) return Promise.resolve();
   const misiones = estado.misiones; // si empieza otra llamada, esta respuesta ya no aplica
-  estado.revisando = enviar("/api/misiones", { ...cuerpoEscenario(), pendientes, turnos: turnosParaEnviar(14) })
+  estado.revisando = enviar("api/misiones", { ...cuerpoEscenario(), pendientes, turnos: turnosParaEnviar(14) })
     .then(({ cumplidas }) => {
       if (misiones !== estado.misiones) return;
       const nuevas = (cumplidas || []).filter((i) => misiones[i] === false);
@@ -531,7 +533,7 @@ async function terminar() {
     // Última revisión de misiones antes de evaluar (si tarda o falla, seguimos sin ella)
     const espera = new Promise((r) => setTimeout(r, 6000));
     await Promise.race([Promise.resolve(estado.revisando).then(() => revisarMisiones()), espera]);
-    const evaluacion = await enviar("/api/evaluar", { ...cuerpoEscenario(), turnos: turnosParaEnviar(200) });
+    const evaluacion = await enviar("api/evaluar", { ...cuerpoEscenario(), turnos: turnosParaEnviar(200) });
     guardarPractica(evaluacion, segundos);
     const premio = registrarLlamadaEnJuego(evaluacion);
     mostrarEvaluacion(evaluacion, segundos, premio);
@@ -641,7 +643,7 @@ async function pedirPista() {
   $("btn-pista").disabled = true;
   panel.innerHTML = `<p class="vacio">Preparando tu pista…</p>`;
   try {
-    const pista = await enviar("/api/pista", { ...cuerpoEscenario(), turnos });
+    const pista = await enviar("api/pista", { ...cuerpoEscenario(), turnos });
     panel.innerHTML = `
       <button class="cerrar-pista" aria-label="Cerrar pista" onclick="document.getElementById('panel-pista').classList.add('oculto')">${icono("close")}</button>
       <h3>${escapar(personajeActual())} dijo</h3>
@@ -754,7 +756,7 @@ async function verificarFrase(frase, blob) {
     lector.readAsDataURL(blob);
   });
   const formato = (blob.type.match(/audio\/(webm|mp4|ogg|wav|mpeg)/) || [null, "webm"])[1];
-  return enviar("/api/verificar-frase", { frase, audio_base64: base64, formato });
+  return enviar("api/verificar-frase", { frase, audio_base64: base64, formato });
 }
 
 function pintarResultadoFrase(caja, datos) {

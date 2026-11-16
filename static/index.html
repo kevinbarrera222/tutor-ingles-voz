@@ -3,11 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Si la dirección no termina en "/" (pasa cuando Streamlit sirve el tutor en una subruta),
+    // fija la base para que "static/..." y "api/..." apunten a la carpeta del tutor.
+    if (!location.pathname.endsWith("/")) {
+      const base = document.createElement("base");
+      base.href = location.pathname + "/";
+      document.head.appendChild(base);
+    }
+  </script>
   <title>Tutor de inglés por voz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
   <!-- Íconos de línea (se usan con <svg><use href="#i-nombre"/></svg>) -->
@@ -41,7 +50,7 @@
   </svg>
 
   <header class="barra">
-    <a class="marca" href="/" aria-label="Tutor de inglés, inicio">
+    <a class="marca" href="./" aria-label="Tutor de inglés, inicio">
       <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
         <rect width="32" height="32" rx="11" fill="#FF5E4D"/>
         <path d="M9 12.5v7M13 9.5v13M17 11.5v9M21 13.5v5" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
@@ -205,6 +214,6 @@
 
   <div id="aviso-xp" class="aviso-xp" role="status" aria-live="polite"></div>
   <audio id="audio-tutor" autoplay></audio>
-  <script src="/static/app.js"></script>
+  <script src="static/app.js"></script>
 </body>
 </html>

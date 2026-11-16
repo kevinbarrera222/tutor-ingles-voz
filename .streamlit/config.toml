@@ -1,0 +1,8 @@
+[server]
+# Escuchar en IPv4: algunas versiones de Streamlit escuchan solo en IPv6 por defecto
+# y así la app no carga en Streamlit Community Cloud.
+address = "0.0.0.0"
+headless = true
+
+[browser]
+gatherUsageStats = false

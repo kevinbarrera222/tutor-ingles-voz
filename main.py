@@ -33,6 +33,8 @@ MODELO_TRANSCRIPCION = os.getenv("MODELO_TRANSCRIPCION", "gpt-transcribe")
 MODELO_EVALUACION = os.getenv("MODELO_EVALUACION", "gpt-6-luna")
 MAX_MINUTOS_SESION = float(os.getenv("MAX_MINUTOS_SESION", "5"))
 MAX_SESIONES_POR_DIA = int(os.getenv("MAX_SESIONES_POR_DIA", "20"))
+# Tope de llamadas por día sumando a todos los visitantes (protege tu saldo si la app es pública)
+MAX_SESIONES_TOTALES_POR_DIA = int(os.getenv("MAX_SESIONES_TOTALES_POR_DIA", "50"))
 # Pistas, misiones, escenarios personalizados y frases verificadas (cada tipo por separado)
 MAX_AYUDAS_POR_DIA = int(os.getenv("MAX_AYUDAS_POR_DIA", "300"))
 # Qué tan rápido responde el tutor cuando dejas de hablar: high (rápido), medium o low (espera más)
@@ -49,7 +51,7 @@ app.mount("/static", StaticFiles(directory=CARPETA_STATIC), name="static")
 async def sin_cache(request: Request, call_next):
     """Evita que el navegador muestre una versión vieja de la página después de actualizar."""
     respuesta = await call_next(request)
-    if request.url.path == "/" or request.url.path.startswith("/static/"):
+    if "/api/" not in request.url.path:
         respuesta.headers["Cache-Control"] = "no-cache"
     return respuesta
 
@@ -71,9 +73,18 @@ _uso: dict[tuple[str, str], int] = {}
 _dia = date.today()
 
 
+def ip_visitante(request: Request) -> str:
+    """IP del visitante. En la nube (Streamlit, Render…) la app está detrás de un proxy,
+    así que la IP real viene en el encabezado X-Forwarded-For."""
+    reenviada = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    if reenviada:
+        return reenviada
+    return request.client.host if request.client else "desconocido"
+
+
 def limitar(request: Request, tipo: str, maximo: int, mensaje: str) -> None:
     global _dia
-    ip = request.client.host if request.client else "desconocido"
+    ip = ip_visitante(request)
     with _lock:
         if date.today() != _dia:
             _dia = date.today()
@@ -81,6 +92,18 @@ def limitar(request: Request, tipo: str, maximo: int, mensaje: str) -> None:
         if _uso.get((ip, tipo), 0) >= maximo:
             raise HTTPException(status_code=429, detail=mensaje)
         _uso[(ip, tipo)] = _uso.get((ip, tipo), 0) + 1
+
+
+def limitar_total(maximo: int) -> None:
+    """Cuenta las llamadas de todos los visitantes juntos."""
+    global _dia
+    with _lock:
+        if date.today() != _dia:
+            _dia = date.today()
+            _uso.clear()
+        if _uso.get(("todos", "sesion"), 0) >= maximo:
+            raise HTTPException(status_code=429, detail="El tutor llegó a su límite de llamadas de hoy. Vuelve mañana.")
+        _uso[("todos", "sesion")] = _uso.get(("todos", "sesion"), 0) + 1
 
 
 def limitar_ayuda(request: Request, tipo: str) -> None:
@@ -198,6 +221,7 @@ def crear_sesion(pedido: ConEscenario, request: Request):
     cliente = cliente_openai()
     limitar(request, "sesion", MAX_SESIONES_POR_DIA,
             f"Llegaste al límite de {MAX_SESIONES_POR_DIA} llamadas por hoy. Vuelve mañana.")
+    limitar_total(MAX_SESIONES_TOTALES_POR_DIA)
 
     sesion = {
         "type": "realtime",
