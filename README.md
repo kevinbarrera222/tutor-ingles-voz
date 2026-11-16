@@ -1,8 +1,16 @@
-# 🎙️ Tutor de inglés por voz (prototipo)
+# 🎙️ Tutor de inglés por voz
 
-Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA que hace un papel (entrevistador, mesero, recepcionista). Al terminar recibes una **evaluación en español**: nota, errores con su corrección, frases más naturales, vocabulario útil y consejos.
+**Tutor de inglés por voz** es una aplicación web para perder el miedo a hablar inglés practicando conversaciones reales en voz alta. En lugar de llenar ejercicios, llamas a un personaje de IA (una entrevistadora de trabajo, un mesero, una recepcionista de hotel o uno que tú mismo creas) y conversas con él como en una llamada de verdad. El personaje te escucha y te responde al instante.
+
+Durante la llamada cumples misiones, puedes pedir pistas en español y ves la transcripción en vivo. Al colgar recibes una **evaluación en español** con tu nota, tus errores corregidos, frases más naturales, vocabulario nuevo y consejos. Luego practicas cada corrección con tu voz, repasas tus palabras con tarjetas y ganas puntos, niveles y medallas para mantener la constancia.
+
+Está pensada para hispanohablantes de nivel básico a avanzado que necesitan inglés para el trabajo, para viajar o para una entrevista.
 
 **🚀 Pruébala en línea:** [https://tutor-ingles-voz-qw9i2covb5d6g3agezozp4.streamlit.app/](https://tutor-ingles-voz-qw9i2covb5d6g3agezozp4.streamlit.app/)
+
+**Tecnologías:** Python, FastAPI, OpenAI Realtime API (voz en tiempo real por WebRTC), gpt-6-luna (evaluación, pistas y misiones), gpt-transcribe, HTML/CSS/JavaScript y Streamlit Community Cloud para la publicación.
+
+## ✨ Funcionalidades
 
 - 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma, cada uno con su foto y su propia voz (Mike con voz masculina), y la transcripción siempre visible al lado
 - 🔮 Orbe animado que reacciona al volumen real de tu voz y la del tutor, con un anillo que marca el tiempo de la sesión
@@ -150,7 +158,7 @@ Para probar lo mismo en tu PC: `streamlit run streamlit_app.py` (la forma de sie
 
 > 💡 Al publicarla, cualquiera con el enlace usa tu saldo de OpenAI. Además de los límites por visitante, `MAX_SESIONES_TOTALES_POR_DIA` (50 por defecto) limita las llamadas de todos juntos. También conviene poner un límite de gasto mensual en tu cuenta de OpenAI.
 
-## ⚠️ Limitaciones del prototipo
+## ⚠️ Limitaciones actuales
 
 - Sin login ni base de datos: el historial y el vocabulario viven en el navegador (si cambias de navegador o borras sus datos, se pierden) y los límites viven en memoria (se reinician al reiniciar el servidor).
 - El corte por tiempo lo hace el navegador.
