@@ -2,6 +2,8 @@
 
 Practica conversaciones en inglés **hablando en voz alta** con un tutor de IA que hace un papel (entrevistador, mesero, recepcionista). Al terminar recibes una **evaluación en español**: nota, errores con su corrección, frases más naturales, vocabulario útil y consejos.
 
+**🚀 Pruébala en línea:** [https://tutor-ingles-voz-qw9i2covb5d6g3agezozp4.streamlit.app/](https://tutor-ingles-voz-qw9i2covb5d6g3agezozp4.streamlit.app/)
+
 - 🗣️ Conversación por voz en tiempo real (OpenAI Realtime API por WebRTC), como una llamada con un personaje: Sarah, Mike o Emma, cada uno con su foto y su propia voz (Mike con voz masculina), y la transcripción siempre visible al lado
 - 🔮 Orbe animado que reacciona al volumen real de tu voz y la del tutor, con un anillo que marca el tiempo de la sesión
 - 💬 Subtítulos grandes de lo que dice el tutor
@@ -133,7 +135,7 @@ docs/              # Capturas para este README
 
 ## ☁️ Publicar en Streamlit Community Cloud
 
-La app se publica en la misma cuenta de Streamlit que los otros proyectos. `streamlit_app.py` crea una app de Streamlit (`st.App`) que muestra el tutor a pantalla completa y sirve el servidor del tutor (`main.py`) en la ruta `/tutor/`.
+La app está publicada en [https://tutor-ingles-voz-qw9i2covb5d6g3agezozp4.streamlit.app/](https://tutor-ingles-voz-qw9i2covb5d6g3agezozp4.streamlit.app/), en la misma cuenta de Streamlit que los otros proyectos. `streamlit_app.py` crea una app de Streamlit (`st.App`) que muestra el tutor a pantalla completa y sirve el servidor del tutor (`main.py`) en la ruta `/tutor/`.
 
 1. En [share.streamlit.io](https://share.streamlit.io) toca **Create app** y elige el repositorio `tutor-ingles-voz`, la rama `main` y el archivo `streamlit_app.py`.
 2. En **Advanced settings** elige **Python 3.13** y en **Secrets** pega:
