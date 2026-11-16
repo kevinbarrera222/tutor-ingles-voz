@@ -30,7 +30,7 @@ ESCENARIOS = {
         "genero": "femenino",
         "voz": "marin",
         "foto": "photo-1758518727888-ffa196002e59",
-        "color": "#15803D",  # color del avatar (iniciales)
+        "color": "#E8432F",  # color del avatar (iniciales)
         "papel": "Entrevistadora de recursos humanos",
         "titulo": "Entrevista de trabajo",
         "icono": "💼",
@@ -54,7 +54,7 @@ ESCENARIOS = {
         "genero": "masculino",
         "voz": "cedar",
         "foto": "photo-1585813597615-19a076b2724a",
-        "color": "#2563EB",  # color del avatar (iniciales)
+        "color": "#0D9488",  # color del avatar (iniciales)
         "papel": "Mesero del restaurante",
         "titulo": "Pedir en un restaurante",
         "icono": "🍽️",
@@ -77,7 +77,7 @@ ESCENARIOS = {
         "genero": "femenino",
         "voz": "coral",
         "foto": "photo-1573497160825-0d94a2724d40",
-        "color": "#0F766E",  # color del avatar (iniciales)
+        "color": "#7C3AED",  # color del avatar (iniciales)
         "papel": "Recepcionista del hotel",
         "titulo": "Check-in en un hotel",
         "icono": "🏨",

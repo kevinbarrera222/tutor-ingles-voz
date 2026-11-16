@@ -74,7 +74,7 @@ function contenidoAvatar(esc) {
   return `${inicial}<img src="${escapar(url)}" alt="" loading="lazy" onerror="this.remove()">`;
 }
 const avatar = (esc, clase = "avatar-contacto") =>
-  `<span class="${clase}" style="--color-personaje:${escapar(esc?.color || "#15803D")}">${contenidoAvatar(esc)}</span>`;
+  `<span class="${clase}" style="--color-personaje:${escapar(esc?.color || "#FF5E4D")}">${contenidoAvatar(esc)}</span>`;
 
 // ---------- Escenario actual ----------
 function escenarioActual() {
@@ -569,10 +569,10 @@ function volumen(analizador) {
 
 // [color del centro, color del borde] para cada estado del orbe
 const COLORES_ORBE = {
-  tutor: [[34, 197, 94], [59, 130, 246]],        // verde → azul
-  usuario: [[59, 130, 246], [56, 189, 248]],     // azul → celeste
-  quieto: [[148, 163, 184], [203, 213, 225]],    // gris
-  silenciado: [[245, 158, 11], [251, 191, 36]],  // ámbar
+  tutor: [[255, 94, 77], [255, 176, 32]],       // coral → mango
+  usuario: [[20, 184, 166], [34, 211, 238]],     // turquesa → celeste
+  quieto: [[226, 196, 184], [246, 221, 207]],    // durazno apagado
+  silenciado: [[167, 139, 250], [196, 181, 253]], // lila
 };
 
 function iniciarOrbe() {
@@ -1053,7 +1053,7 @@ function confeti(origen, cantidad = 26) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const r = origen?.getBoundingClientRect?.() || { left: innerWidth / 2, top: innerHeight / 3, width: 0, height: 0 };
   const x = r.left + r.width / 2, y = r.top + r.height / 2;
-  const colores = ["#22C55E", "#2563EB", "#F59E0B", "#38BDF8", "#A855F7", "#F43F5E"];
+  const colores = ["#FF5E4D", "#FFB020", "#14B8A6", "#22D3EE", "#F472B6", "#A78BFA"];
   for (let i = 0; i < cantidad; i++) {
     const p = document.createElement("span");
     p.className = "confeti";
